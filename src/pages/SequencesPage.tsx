@@ -13,9 +13,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Loader2, Pause, XCircle, Zap, Activity } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Loader2, Pause, XCircle, Zap, Activity, ListChecks } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import SequenceTemplates from "@/components/sequences/SequenceTemplates";
 
 type ContactSequenceRow = {
   id: string;
@@ -151,113 +153,145 @@ export default function SequencesPage() {
 
   return (
     <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-6 animate-fade-in">
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-display font-bold flex items-center gap-2">
-            <Activity className="w-6 h-6 text-primary" />
+      <Tabs defaultValue="automations" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="automations" className="gap-1.5">
+            <Activity className="w-4 h-4" />
             Active Automations
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Monitor all running sequences and their progress
-          </p>
-        </div>
-        <Select value={filter} onValueChange={setFilter}>
-          <SelectTrigger className="w-40">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All</SelectItem>
-            <SelectItem value="active">Active</SelectItem>
-            <SelectItem value="paused">Paused</SelectItem>
-            <SelectItem value="completed">Completed</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+          </TabsTrigger>
+          <TabsTrigger value="templates" className="gap-1.5">
+            <ListChecks className="w-4 h-4" />
+            Sequence Templates
+          </TabsTrigger>
+        </TabsList>
 
-      {isLoading ? (
-        <div className="flex justify-center py-12">
-          <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-        </div>
-      ) : rows.length === 0 ? (
-        <Card className="bg-card border-border">
-          <CardContent className="p-12 text-center">
-            <Zap className="w-10 h-10 mx-auto mb-3 text-muted-foreground/40" />
-            <p className="text-muted-foreground">
-              No active automations. Automations will appear here automatically when contacts enter a pipeline stage.
-            </p>
-          </CardContent>
-        </Card>
-      ) : (
-        <Card className="bg-card border-border overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Contact</TableHead>
-                <TableHead>Flow</TableHead>
-                <TableHead>Progress</TableHead>
-                <TableHead>Next Message</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.map((row) => {
-                const sc = statusConfig[row.status] || statusConfig.active;
-                const nextAt = nextMessages[row.id];
-                return (
-                  <TableRow key={row.id}>
-                    <TableCell className="font-medium">
-                      {row.contacts?.full_name || "Unknown"}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {row.sequences?.name || "Unknown flow"}
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-sm">
-                        Step {row.current_step} of {row.step_count}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground text-sm">
-                      {row.status === "active" && nextAt
-                        ? format(new Date(nextAt), "MMM d, h:mm a")
-                        : "—"}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={sc.variant}>{sc.label}</Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {row.status === "active" && (
-                        <div className="flex justify-end gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                            title="Pause"
-                            onClick={() => pauseMutation.mutate(row.id)}
-                            disabled={pauseMutation.isPending}
-                          >
-                            <Pause className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-destructive"
-                            title="Cancel"
-                            onClick={() => cancelMutation.mutate(row)}
-                            disabled={cancelMutation.isPending}
-                          >
-                            <XCircle className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </Card>
-      )}
+        <TabsContent value="automations">
+          <div className="space-y-6">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <h1 className="text-2xl font-display font-bold flex items-center gap-2">
+                  <Activity className="w-6 h-6 text-primary" />
+                  Active Automations
+                </h1>
+                <p className="text-sm text-muted-foreground">
+                  Monitor all running sequences and their progress
+                </p>
+              </div>
+              <Select value={filter} onValueChange={setFilter}>
+                <SelectTrigger className="w-40">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="paused">Paused</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {isLoading ? (
+              <div className="flex justify-center py-12">
+                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : rows.length === 0 ? (
+              <Card className="bg-card border-border">
+                <CardContent className="p-12 text-center">
+                  <Zap className="w-10 h-10 mx-auto mb-3 text-muted-foreground/40" />
+                  <p className="text-muted-foreground">
+                    No active automations. Automations will appear here automatically when contacts enter a pipeline stage.
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card className="bg-card border-border overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Contact</TableHead>
+                      <TableHead>Flow</TableHead>
+                      <TableHead>Progress</TableHead>
+                      <TableHead>Next Message</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {rows.map((row) => {
+                      const sc = statusConfig[row.status] || statusConfig.active;
+                      const nextAt = nextMessages[row.id];
+                      return (
+                        <TableRow key={row.id}>
+                          <TableCell className="font-medium">
+                            {row.contacts?.full_name || "Unknown"}
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {row.sequences?.name || "Unknown flow"}
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-sm">
+                              Step {row.current_step} of {row.step_count}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-muted-foreground text-sm">
+                            {row.status === "active" && nextAt
+                              ? format(new Date(nextAt), "MMM d, h:mm a")
+                              : "—"}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={sc.variant}>{sc.label}</Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {row.status === "active" && (
+                              <div className="flex justify-end gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  title="Pause"
+                                  onClick={() => pauseMutation.mutate(row.id)}
+                                  disabled={pauseMutation.isPending}
+                                >
+                                  <Pause className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-destructive"
+                                  title="Cancel"
+                                  onClick={() => cancelMutation.mutate(row)}
+                                  disabled={cancelMutation.isPending}
+                                >
+                                  <XCircle className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </Card>
+            )}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="templates">
+          <div className="space-y-6">
+            <div>
+              <h1 className="text-2xl font-display font-bold flex items-center gap-2">
+                <ListChecks className="w-6 h-6 text-primary" />
+                Sequence Templates
+              </h1>
+              <p className="text-sm text-muted-foreground">
+                Manage your automation sequences and edit message templates
+              </p>
+            </div>
+            <SequenceTemplates />
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
