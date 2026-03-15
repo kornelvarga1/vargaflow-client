@@ -13,9 +13,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Loader2, Pause, XCircle, Zap, Activity } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Loader2, Pause, XCircle, Zap, Activity, ListChecks } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import SequenceTemplates from "@/components/sequences/SequenceTemplates";
 
 type ContactSequenceRow = {
   id: string;
