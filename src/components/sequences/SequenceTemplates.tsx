@@ -108,11 +108,13 @@ export default function SequenceTemplates() {
       {sequences.map((seq) => (
         <Card
           key={seq.id}
-          className={`bg-card border-border cursor-pointer transition-colors hover:border-primary/40 ${selectedId === seq.id ? "border-primary" : ""}`}
-          onClick={() => setSelectedId(selectedId === seq.id ? null : seq.id)}
+          className={`bg-card border-border transition-colors ${selectedId === seq.id ? "border-primary" : ""}`}
         >
           <CardContent className="p-4 space-y-3">
-            <div className="flex items-center justify-between gap-3">
+            <div
+              className="flex items-center justify-between gap-3 cursor-pointer"
+              onClick={() => setSelectedId(selectedId === seq.id ? null : seq.id)}
+            >
               <div className="flex items-center gap-3 min-w-0">
                 <ChevronRight
                   className={`w-4 h-4 text-muted-foreground shrink-0 transition-transform ${selectedId === seq.id ? "rotate-90" : ""}`}
@@ -139,7 +141,11 @@ export default function SequenceTemplates() {
                 />
               </div>
             </div>
-            {selectedId === seq.id && <SequenceDetail sequenceId={seq.id} />}
+            {selectedId === seq.id && (
+              <div onClick={(e) => e.stopPropagation()}>
+                <SequenceDetail sequenceId={seq.id} />
+              </div>
+            )}
           </CardContent>
         </Card>
       ))}
