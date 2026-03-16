@@ -40,7 +40,7 @@ export default function Index() {
     <div className="p-4 md:p-8 max-w-6xl mx-auto space-y-6 animate-slide-up">
       <div>
         <h1 className="text-3xl font-display font-bold">Dashboard</h1>
-        <p className="text-muted-foreground mt-1">Welcome back to Local Scaling CRM</p>
+        <p className="text-muted-foreground mt-1">Welcome back to Varga Flow CRM</p>
       </div>
 
       {/* Needs Attention - always visible first */}
@@ -54,12 +54,7 @@ export default function Index() {
       ) : (
         <>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 md:gap-4 stagger-in">
-            <StatCard
-              icon={Users}
-              label="Total Contacts"
-              value={stats?.totalContacts ?? 0}
-              to="/contacts"
-            />
+            <StatCard icon={Users} label="Total Contacts" value={stats?.totalContacts ?? 0} to="/contacts" />
             <StatCard
               icon={MessageSquare}
               label="Pending Messages"
@@ -67,18 +62,8 @@ export default function Index() {
               to="/messages"
               highlight={!!stats?.pendingMessages}
             />
-            <StatCard
-              icon={Send}
-              label="Messages Sent"
-              value={stats?.sentMessages ?? 0}
-              to="/messages"
-            />
-            <StatCard
-              icon={ListChecks}
-              label="Active Sequences"
-              value={stats?.activeSequences ?? 0}
-              to="/sequences"
-            />
+            <StatCard icon={Send} label="Messages Sent" value={stats?.sentMessages ?? 0} to="/messages" />
+            <StatCard icon={ListChecks} label="Active Sequences" value={stats?.activeSequences ?? 0} to="/sequences" />
           </div>
 
           {/* Pipeline breakdowns */}
@@ -176,9 +161,7 @@ function StatCard({
             <ArrowRight className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
           </div>
           <div>
-            <p className={`text-2xl font-display font-bold ${highlight ? "text-accent-foreground" : ""}`}>
-              {value}
-            </p>
+            <p className={`text-2xl font-display font-bold ${highlight ? "text-accent-foreground" : ""}`}>{value}</p>
             <p className="text-xs text-muted-foreground">{label}</p>
           </div>
         </CardContent>
@@ -211,7 +194,9 @@ function PipelineCard({
               <Icon className="w-4 h-4 text-accent-foreground" />
               <span className="font-display font-semibold text-sm">{title}</span>
             </div>
-            <Badge variant="secondary" className="text-xs">{total} total</Badge>
+            <Badge variant="secondary" className="text-xs">
+              {total} total
+            </Badge>
           </div>
           <div className="space-y-1.5">
             {stages.map((s) => {
