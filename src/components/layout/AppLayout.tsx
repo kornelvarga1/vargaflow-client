@@ -1,7 +1,8 @@
 import { ReactNode, useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
-import { LayoutDashboard, Users, Settings, MessageSquare, Menu, X, Zap } from "lucide-react";
+import { LayoutDashboard, Users, Settings, MessageSquare, Menu, X, Zap, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/useAuth";
 
 const navItems = [
   { to: "/", icon: LayoutDashboard, label: "Dashboard" },
@@ -15,6 +16,7 @@ const mobileNavItems = navItems;
 export default function AppLayout({ children }: { children: ReactNode }) {
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { signOut } = useAuth();
 
   return (
     <div className="flex h-screen overflow-hidden">
@@ -43,6 +45,15 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             </NavLink>
           ))}
         </nav>
+        <div className="px-3 py-3 border-t border-border">
+          <button
+            onClick={signOut}
+            className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/70 transition-all duration-200"
+          >
+            <LogOut className="w-4 h-4 shrink-0" />
+            <span>Sign out</span>
+          </button>
+        </div>
       </aside>
 
       {/* Mobile slide-out menu overlay */}
