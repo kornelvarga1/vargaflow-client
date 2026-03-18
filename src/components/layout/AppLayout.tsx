@@ -1,21 +1,16 @@
 import { ReactNode, useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
-import { LayoutDashboard, Users, Kanban, Settings, MessageSquare, Zap, ListChecks, Menu, X } from "lucide-react";
+import { LayoutDashboard, Users, Settings, MessageSquare, Menu, X, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import logo from "@/assets/logo.png";
 
 const navItems = [
   { to: "/", icon: LayoutDashboard, label: "Dashboard" },
-  { to: "/pipeline/sales", icon: Kanban, label: "Sales Pipeline" },
-  { to: "/pipeline/onboarding", icon: Zap, label: "Onboarding" },
+  { to: "/messages", icon: MessageSquare, label: "Inbox" },
   { to: "/contacts", icon: Users, label: "Contacts" },
-  { to: "/sequences", icon: ListChecks, label: "Sequences" },
-  { to: "/messages", icon: MessageSquare, label: "Messages" },
   { to: "/settings", icon: Settings, label: "Settings" },
 ];
 
-// Show max 5 items in bottom nav, rest go in "more" menu
-const mobileNavItems = navItems.slice(0, 5);
+const mobileNavItems = navItems;
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   const location = useLocation();
@@ -24,9 +19,10 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   return (
     <div className="flex h-screen overflow-hidden">
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex w-60 flex-col border-r border-border bg-sidebar shrink-0">
-        <div className="flex items-center gap-2.5 px-5 py-4 border-b border-border">
-          <img src={logo} alt="VargaFlow" className="h-9" />
+      <aside className="hidden md:flex w-60 flex-col border-r border-border bg-sidebar shrink-0 border-t-[3px] border-t-teal-600">
+        <div className="flex items-center gap-2 px-5 py-4 border-b border-border">
+          <Zap className="w-4 h-4 text-teal-600 shrink-0" />
+          <span className="text-[17px] font-display font-bold text-teal-700 tracking-tight">Client Portal</span>
         </div>
         <nav className="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto">
           {navItems.map((item) => (
@@ -37,7 +33,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
               className={({ isActive }) =>
                 `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                   isActive
-                    ? "bg-accent text-accent-foreground shadow-sm"
+                    ? "bg-teal-500/10 text-teal-700 shadow-sm"
                     : "text-muted-foreground hover:text-foreground hover:bg-secondary/70"
                 }`
               }
@@ -47,9 +43,6 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             </NavLink>
           ))}
         </nav>
-        <div className="px-5 py-3 border-t border-border">
-          <p className="text-[10px] text-muted-foreground/50 font-medium tracking-wider uppercase">VargaFlow</p>
-        </div>
       </aside>
 
       {/* Mobile slide-out menu overlay */}
@@ -61,7 +54,10 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           />
           <aside className="relative w-64 bg-sidebar border-r border-border flex flex-col animate-slide-in-right">
             <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-              <img src={logo} alt="VargaFlow" className="h-8" />
+              <div className="flex items-center gap-2">
+                <Zap className="w-4 h-4 text-teal-600 shrink-0" />
+                <span className="text-[17px] font-display font-bold text-teal-700 tracking-tight">Client Portal</span>
+              </div>
               <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setMobileMenuOpen(false)}>
                 <X className="w-4 h-4" />
               </Button>
@@ -102,10 +98,10 @@ export default function AppLayout({ children }: { children: ReactNode }) {
               key={item.to}
               to={item.to}
               className={`flex-1 flex flex-col items-center gap-0.5 py-2 text-[10px] font-medium transition-all active-press ${
-                isActive ? "text-accent-foreground" : "text-muted-foreground"
+                isActive ? "text-teal-700" : "text-muted-foreground"
               }`}
             >
-              <div className={`p-1 rounded-md transition-colors ${isActive ? "bg-accent/50" : ""}`}>
+              <div className={`p-1 rounded-md transition-colors ${isActive ? "bg-teal-500/15" : ""}`}>
                 <item.icon className="w-4 h-4" />
               </div>
               <span>{item.label.split(" ")[0]}</span>

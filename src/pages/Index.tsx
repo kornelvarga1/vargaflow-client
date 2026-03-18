@@ -2,24 +2,18 @@ import { Link } from "react-router-dom";
 import NeedsAttentionSection from "@/components/dashboard/NeedsAttentionSection";
 import { useDashboardStats } from "@/hooks/useDashboardStats";
 import { useActivityLog } from "@/hooks/useActivityLog";
-import { SALES_STAGES, ONBOARDING_STAGES } from "@/hooks/useContacts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import {
   Users,
-  Kanban,
-  Zap,
   MessageSquare,
+  UserPlus,
+  ArrowRightLeft,
   Send,
-  ListChecks,
+  Star,
   Clock,
   ArrowRight,
   Loader2,
-  UserPlus,
-  ArrowRightLeft,
-  Mail,
-  CheckCircle,
   Activity,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
@@ -28,7 +22,6 @@ const activityIcons: Record<string, typeof Activity> = {
   contact_created: UserPlus,
   stage_changed: ArrowRightLeft,
   message_sent: Send,
-  sequence_enrolled: ListChecks,
   contact_updated: Users,
 };
 
@@ -40,50 +33,28 @@ export default function Index() {
     <div className="p-4 md:p-8 max-w-6xl mx-auto space-y-6 animate-slide-up">
       <div>
         <h1 className="text-3xl font-display font-bold">Dashboard</h1>
-        <p className="text-muted-foreground mt-1">Welcome back to Varga Flow CRM</p>
+        <p className="text-muted-foreground mt-1">Welcome back.</p>
       </div>
 
-      {/* Needs Attention - always visible first */}
       <NeedsAttentionSection />
 
-      {/* Top stat cards */}
       {statsLoading ? (
         <div className="flex justify-center py-8">
           <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
         </div>
       ) : (
-        <>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 md:gap-4 stagger-in">
-            <StatCard icon={Users} label="Total Contacts" value={stats?.totalContacts ?? 0} to="/contacts" />
-            <StatCard
-              icon={MessageSquare}
-              label="Pending Messages"
-              value={stats?.pendingMessages ?? 0}
-              to="/messages"
-              highlight={!!stats?.pendingMessages}
-            />
-            <StatCard icon={Send} label="Messages Sent" value={stats?.sentMessages ?? 0} to="/messages" />
-            <StatCard icon={ListChecks} label="Active Sequences" value={stats?.activeSequences ?? 0} to="/sequences" />
-          </div>
-
-          {/* Pipeline breakdowns */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <PipelineCard
-              title="Sales Pipeline"
-              icon={Kanban}
-              stages={SALES_STAGES}
-              data={stats?.salesByStage || {}}
-              to="/pipeline/sales"
-            />
-            <PipelineCard
-              title="Client Onboarding"
-              icon={Zap}
-              stages={ONBOARDING_STAGES}
-              data={stats?.onboardingByStage || {}}
-              to="/pipeline/onboarding"
-            />
-          </div>
-        </>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 md:gap-4 stagger-in">
+          <StatCard icon={UserPlus} label="New Leads This Week" value={stats?.newLeadsThisWeek ?? 0} to="/contacts" />
+          <StatCard
+            icon={MessageSquare}
+            label="Unread Messages"
+            value={stats?.unreadMessages ?? 0}
+            to="/messages"
+            highlight={!!stats?.unreadMessages}
+          />
+          <StatCard icon={Users} label="Contacts in Pipeline" value={stats?.contactsInPipeline ?? 0} to="/contacts" />
+          <StatCard icon={Star} label="Reviews Collected" value={stats?.reviewsCollected ?? 0} to="/contacts" />
+        </div>
       )}
 
       {/* Activity Log */}
@@ -102,7 +73,7 @@ export default function Index() {
             </div>
           ) : activities.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-6">
-              No activity yet. Start by adding contacts and moving them through your pipelines.
+              No activity yet. Start by adding contacts.
             </p>
           ) : (
             <div className="space-y-3">
@@ -152,69 +123,19 @@ function StatCard({
     <Link to={to}>
       <Card
         className={`bg-card border-border shadow-card hover:shadow-glow transition-shadow cursor-pointer group ${
-          highlight ? "border-accent/50" : ""
+          highlight ? "border-teal-400/50" : ""
         }`}
       >
-        <CardContent className="p-4 flex flex-col gap-2">
+        <CardContent className="p-4 flex flex-col gap-3">
           <div className="flex items-center justify-between">
-            <Icon className="w-4 h-4 text-muted-foreground group-hover:text-accent-foreground transition-colors" />
+            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${highlight ? "bg-teal-500/15" : "bg-teal-500/10"}`}>
+              <Icon className={`w-4 h-4 ${highlight ? "text-teal-700" : "text-teal-600"}`} />
+            </div>
             <ArrowRight className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
           </div>
           <div>
-            <p className={`text-2xl font-display font-bold ${highlight ? "text-accent-foreground" : ""}`}>{value}</p>
+            <p className={`text-2xl font-display font-bold ${highlight ? "text-teal-700" : ""}`}>{value}</p>
             <p className="text-xs text-muted-foreground">{label}</p>
-          </div>
-        </CardContent>
-      </Card>
-    </Link>
-  );
-}
-
-function PipelineCard({
-  title,
-  icon: Icon,
-  stages,
-  data,
-  to,
-}: {
-  title: string;
-  icon: typeof Kanban;
-  stages: readonly { key: string; label: string }[];
-  data: Record<string, number>;
-  to: string;
-}) {
-  const total = Object.values(data).reduce((a, b) => a + b, 0);
-
-  return (
-    <Link to={to}>
-      <Card className="bg-card border-border shadow-card hover:shadow-glow transition-shadow cursor-pointer group">
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <Icon className="w-4 h-4 text-accent-foreground" />
-              <span className="font-display font-semibold text-sm">{title}</span>
-            </div>
-            <Badge variant="secondary" className="text-xs">
-              {total} total
-            </Badge>
-          </div>
-          <div className="space-y-1.5">
-            {stages.map((s) => {
-              const count = data[s.key] || 0;
-              const pct = total > 0 ? (count / total) * 100 : 0;
-              return (
-                <div key={s.key} className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground w-28 truncate">{s.label}</span>
-                  <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
-                    <div
-                      className="h-full rounded-full gradient-primary transition-all duration-500"
-                      style={{ width: `${pct}%` }}
-                    />
-                  </div>
-                  <span className="text-xs font-medium w-6 text-right">{count}</span>
-                </div>
-              );
-            })}
           </div>
         </CardContent>
       </Card>
