@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
+import { useBusinessId } from "@/hooks/useBusinessId";
 import { logActivity } from "@/hooks/useActivityLog";
 import type { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
 
@@ -42,23 +43,34 @@ export const LEAD_SOURCES = [
 ] as const;
 
 export function useContacts(pipeline?: string) {
+  const { data: businessId } = useBusinessId();
   return useQuery({
-    queryKey: ["contacts", pipeline],
+    queryKey: ["contacts", pipeline, businessId],
     queryFn: async () => {
-      let query = supabase.from("contacts").select("*").order("created_at", { ascending: false });
+      let query = supabase
+        .from("contacts")
+        .select("*")
+        .eq("business_id", businessId!)
+        .order("created_at", { ascending: false });
       if (pipeline) query = query.eq("pipeline", pipeline);
       const { data, error } = await query;
       if (error) throw error;
       return data as Contact[];
     },
+    enabled: !!businessId,
   });
 }
 
 export function useCreateContact() {
+  const { data: businessId } = useBusinessId();
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (contact: ContactInsert) => {
-      const { data, error } = await supabase.from("contacts").insert(contact).select().single();
+      const { data, error } = await supabase
+        .from("contacts")
+        .insert({ ...contact, business_id: businessId })
+        .select()
+        .single();
       if (error) throw error;
       return data;
     },

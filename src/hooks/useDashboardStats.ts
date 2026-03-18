@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
+import { useBusinessId } from "@/hooks/useBusinessId";
 
 export interface DashboardStats {
   newLeadsThisWeek: number;
@@ -9,15 +10,22 @@ export interface DashboardStats {
 }
 
 export function useDashboardStats() {
+  const { data: businessId } = useBusinessId();
   return useQuery({
-    queryKey: ["dashboard_stats"],
+    queryKey: ["dashboard_stats", businessId],
     queryFn: async () => {
       const weekAgo = new Date();
       weekAgo.setDate(weekAgo.getDate() - 7);
 
       const [contactsRes, messagesRes] = await Promise.all([
-        supabase.from("contacts").select("pipeline, created_at"),
-        supabase.from("message_queue").select("status"),
+        supabase
+          .from("contacts")
+          .select("pipeline, created_at")
+          .eq("business_id", businessId!),
+        supabase
+          .from("message_queue")
+          .select("status")
+          .eq("business_id", businessId!),
       ]);
 
       const contacts = contactsRes.data || [];
@@ -32,6 +40,7 @@ export function useDashboardStats() {
         reviewsCollected: 0,
       } as DashboardStats;
     },
+    enabled: !!businessId,
     refetchInterval: 30000,
   });
 }
