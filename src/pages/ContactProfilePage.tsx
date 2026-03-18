@@ -3,13 +3,11 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { useUpdateContact, SALES_STAGES, ONBOARDING_STAGES, type Contact } from "@/hooks/useContacts";
-import { useStopContactSequences } from "@/hooks/useSequences";
 import { logActivity } from "@/hooks/useActivityLog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import {
   Dialog,
@@ -26,8 +24,6 @@ import {
   Building,
   MessageSquare,
   ArrowRightLeft,
-  Pause,
-  XCircle,
   Send,
   Clock,
   Zap,
@@ -96,40 +92,6 @@ function useContactMessages(contactId: string) {
   });
 }
 
-function useContactActiveSequences(contactId: string) {
-  return useQuery({
-    queryKey: ["contact_active_sequences", contactId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("contact_sequences")
-        .select("*, sequences(name, pipeline, stage)")
-        .eq("contact_id", contactId)
-        .order("started_at", { ascending: false });
-      if (error) throw error;
-
-      // Get step counts
-      const seqIds = [...new Set((data || []).map((d: any) => d.sequence_id))];
-      let stepCounts: Record<string, number> = {};
-      if (seqIds.length > 0) {
-        const { data: steps } = await supabase
-          .from("sequence_steps")
-          .select("sequence_id")
-          .in("sequence_id", seqIds);
-        if (steps) {
-          for (const s of steps) {
-            stepCounts[s.sequence_id] = (stepCounts[s.sequence_id] || 0) + 1;
-          }
-        }
-      }
-
-      return (data || []).map((row: any) => ({
-        ...row,
-        step_count: stepCounts[row.sequence_id] || 0,
-      }));
-    },
-  });
-}
-
 // --- Activity icon/color mapping ---
 
 function getActivityIcon(type: string) {
@@ -157,12 +119,8 @@ export default function ContactProfilePage() {
   const { data: contact, isLoading } = useContact(id!);
   const { data: activities = [] } = useContactActivity(id!);
   const { data: messages = [] } = useContactMessages(id!);
-  const { data: sequences = [] } = useContactActiveSequences(id!);
-  const updateContact = useUpdateContact();
-  const stopSequences = useStopContactSequences();
   const qc = useQueryClient();
 
-  const [moveDialogOpen, setMoveDialogOpen] = useState(false);
   const [smsDialogOpen, setSmsDialogOpen] = useState(false);
 
   if (isLoading) {
@@ -184,7 +142,6 @@ export default function ContactProfilePage() {
 
   const stageLabel = getStageLabel(contact.stage, contact.pipeline);
   const pipelineLabel = contact.pipeline === "onboarding" ? "Onboarding" : "Sales";
-  const activeSeqs = sequences.filter((s: any) => s.status === "active");
 
   // Merge activities and sent messages into a unified timeline
   const timeline = [
@@ -207,32 +164,6 @@ export default function ContactProfilePage() {
   ].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
   const pendingMessages = messages.filter((m: any) => m.status === "pending");
-
-  const handlePauseSequence = async (csId: string) => {
-    const { error } = await supabase
-      .from("contact_sequences")
-      .update({ status: "paused" })
-      .eq("id", csId);
-    if (error) { toast.error("Failed to pause"); return; }
-    qc.invalidateQueries({ queryKey: ["contact_active_sequences"] });
-    toast.success("Sequence paused");
-  };
-
-  const handleCancelSequence = async (csId: string) => {
-    const { error } = await supabase
-      .from("contact_sequences")
-      .update({ status: "stopped" })
-      .eq("id", csId);
-    if (error) { toast.error("Failed to cancel"); return; }
-    await supabase
-      .from("message_queue")
-      .update({ status: "cancelled" })
-      .eq("contact_sequence_id", csId)
-      .eq("status", "pending");
-    qc.invalidateQueries({ queryKey: ["contact_active_sequences"] });
-    qc.invalidateQueries({ queryKey: ["contact_messages"] });
-    toast.success("Sequence cancelled");
-  };
 
   return (
     <div className="p-4 md:p-8 max-w-4xl mx-auto space-y-6 animate-fade-in">
@@ -258,9 +189,6 @@ export default function ContactProfilePage() {
         <div className="flex gap-2 shrink-0">
           <Button variant="outline" size="sm" onClick={() => setSmsDialogOpen(true)}>
             <MessageSquare className="w-4 h-4 mr-1" /> Send SMS
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => setMoveDialogOpen(true)}>
-            <ArrowRightLeft className="w-4 h-4 mr-1" /> Move Stage
           </Button>
         </div>
       </div>
@@ -296,62 +224,6 @@ export default function ContactProfilePage() {
               </div>
               {contact.notes && (
                 <p className="text-xs text-muted-foreground bg-secondary/50 p-2 rounded">{contact.notes}</p>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Active Sequences Card */}
-          <Card className="bg-card border-border">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-display flex items-center gap-2">
-                <Zap className="w-4 h-4 text-primary" /> Active Sequences
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {sequences.length === 0 ? (
-                <p className="text-xs text-muted-foreground">No sequences assigned.</p>
-              ) : (
-                <div className="space-y-3">
-                  {sequences.map((seq: any) => (
-                    <div key={seq.id} className="space-y-1.5">
-                      <div className="flex items-center justify-between">
-                        <p className="text-sm font-medium truncate">{seq.sequences?.name || "Unknown"}</p>
-                        <Badge
-                          variant={
-                            seq.status === "active" ? "default" :
-                            seq.status === "completed" ? "outline" : "secondary"
-                          }
-                          className="text-[10px]"
-                        >
-                          {seq.status}
-                        </Badge>
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        Step {seq.current_step} of {seq.step_count}
-                      </p>
-                      {seq.status === "active" && (
-                        <div className="flex gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 text-xs"
-                            onClick={() => handlePauseSequence(seq.id)}
-                          >
-                            <Pause className="w-3 h-3 mr-1" /> Pause
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 text-xs text-destructive"
-                            onClick={() => handleCancelSequence(seq.id)}
-                          >
-                            <XCircle className="w-3 h-3 mr-1" /> Cancel
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
               )}
             </CardContent>
           </Card>
@@ -429,82 +301,12 @@ export default function ContactProfilePage() {
       </div>
 
       {/* Dialogs */}
-      <MoveStageDialog
-        open={moveDialogOpen}
-        onOpenChange={setMoveDialogOpen}
-        contact={contact}
-      />
       <SendSmsDialog
         open={smsDialogOpen}
         onOpenChange={setSmsDialogOpen}
         contact={contact}
       />
     </div>
-  );
-}
-
-// --- Move Stage Dialog ---
-
-function MoveStageDialog({
-  open,
-  onOpenChange,
-  contact,
-}: {
-  open: boolean;
-  onOpenChange: (o: boolean) => void;
-  contact: Contact;
-}) {
-  const updateContact = useUpdateContact();
-  const qc = useQueryClient();
-  const stages = contact.pipeline === "onboarding" ? ONBOARDING_STAGES : SALES_STAGES;
-  const [selectedStage, setSelectedStage] = useState(contact.stage);
-
-  const handleMove = async () => {
-    if (selectedStage === contact.stage) {
-      onOpenChange(false);
-      return;
-    }
-    try {
-      await updateContact.mutateAsync({
-        id: contact.id,
-        stage: selectedStage,
-        stage_entered_at: new Date().toISOString(),
-      });
-      const label = stages.find((s) => s.key === selectedStage)?.label || selectedStage;
-      await logActivity("stage_changed", `moved to ${label}`, contact.id);
-      toast.success(`Moved to ${label}`);
-      qc.invalidateQueries({ queryKey: ["contact"] });
-      qc.invalidateQueries({ queryKey: ["contact_activity"] });
-      onOpenChange(false);
-    } catch {
-      toast.error("Failed to move");
-    }
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-sm bg-card border-border">
-        <DialogHeader>
-          <DialogTitle className="font-display">Move to Stage</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4">
-          <Select value={selectedStage} onValueChange={setSelectedStage}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {stages.map((s) => (
-                <SelectItem key={s.key} value={s.key}>{s.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <div className="flex justify-end gap-2">
-            <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
-            <Button onClick={handleMove} disabled={updateContact.isPending}>Move</Button>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
   );
 }
 
