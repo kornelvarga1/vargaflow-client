@@ -1,1 +1,10 @@
-project_id = "nxlptuvlpusrnkngxozn"
+project_id = "zfmchywjmgykmlhjihls"
+
+[functions.chat-widget]
+verify_jwt = false
+
+[functions.job-complete-form]
+verify_jwt = false
+
+[functions.one-year-followup-entry]
+verify_jwt = false

@@ -11,6 +11,7 @@ import ContactsPage from "./pages/ContactsPage";
 import MessageQueuePage from "./pages/MessageQueuePage";
 import ContactProfilePage from "./pages/ContactProfilePage";
 import LoginPage from "./pages/LoginPage";
+import JobCompletePage from "./pages/JobCompletePage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -23,6 +24,7 @@ const App = () => (
         <AuthProvider>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/job-complete" element={<JobCompletePage />} />
             <Route
               path="/*"
               element={
