@@ -11,7 +11,8 @@
  * Returns:   application/javascript
  * Auth:      verify_jwt = false (public endpoint)
  *
- * Settings columns used: company_name, brand_color, logo_url
+ * Branding: auto-detected from the host page (CSS variables, meta tags, favicon,
+ *           DOM elements). VargaFlow settings act as fallback only.
  * No auth keys are embedded in the returned JS — the widget only posts to the
  * public chat-widget-lead endpoint with non-sensitive fields.
  */
@@ -62,11 +63,63 @@ Deno.serve(async (req) => {
   if (window.__chatWidgetLoaded) return;
   window.__chatWidgetLoaded = true;
 
-  var BUSINESS_ID   = '${safe(business_id)}';
-  var COMPANY_NAME  = '${safe(company_name)}';
-  var BRAND_COLOR   = '${safe(resolvedColor)}';
-  var LOGO_URL      = '${safe(logo_url ?? "")}';
-  var LEAD_ENDPOINT = '${safe(leadEndpoint)}';
+  /* ── VargaFlow fallback values (from CRM settings) ──────────── */
+  var BUSINESS_ID      = '${safe(business_id)}';
+  var FB_COMPANY_NAME  = '${safe(company_name)}';
+  var FB_BRAND_COLOR   = '${safe(resolvedColor)}';
+  var FB_LOGO_URL      = '${safe(logo_url ?? "")}';
+  var LEAD_ENDPOINT    = '${safe(leadEndpoint)}';
+
+  /* ── Auto-detect host page branding ──────────────────────────── */
+  function detectColor() {
+    var root = document.documentElement;
+    var cs = getComputedStyle(root);
+    var cssVars = ['--primary','--brand','--accent','--color-primary',
+                   '--brand-color','--theme-color','--main-color',
+                   '--color-accent','--color-brand'];
+    for (var i = 0; i < cssVars.length; i++) {
+      var v = cs.getPropertyValue(cssVars[i]).trim();
+      if (v) return v;
+    }
+    /* meta theme-color */
+    var meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) { var mc = meta.getAttribute('content'); if (mc) return mc; }
+    /* sniff first non-white / non-transparent button bg */
+    var btns = document.querySelectorAll('button,[class*="btn"],[class*="primary"],a');
+    for (var j = 0; j < Math.min(btns.length, 20); j++) {
+      var bg = getComputedStyle(btns[j]).backgroundColor;
+      if (bg && bg !== 'rgba(0, 0, 0, 0)' && bg !== 'transparent'
+          && bg !== 'rgb(255, 255, 255)' && bg !== 'rgb(0, 0, 0)') return bg;
+    }
+    return FB_BRAND_COLOR;
+  }
+
+  function detectLogo() {
+    /* favicon */
+    var fav = document.querySelector('link[rel~="icon"]');
+    if (fav && fav.href) return fav.href;
+    /* logo image in header / nav */
+    var sel = 'header img,nav img,[class*="logo"] img,img[class*="logo"],img[id*="logo"],img[alt*="logo" i],img[src*="logo"]';
+    var img = document.querySelector(sel);
+    if (img && img.src) return img.src;
+    return FB_LOGO_URL;
+  }
+
+  function detectName() {
+    /* og:site_name */
+    var og = document.querySelector('meta[property="og:site_name"]');
+    if (og) { var ogv = og.getAttribute('content'); if (ogv) return ogv; }
+    /* application-name */
+    var an = document.querySelector('meta[name="application-name"]');
+    if (an) { var anv = an.getAttribute('content'); if (anv) return anv; }
+    /* page title – take only the first segment before | or – */
+    if (document.title) return document.title.split(/[|\\-–]/)[0].trim();
+    return FB_COMPANY_NAME;
+  }
+
+  var BRAND_COLOR  = detectColor();
+  var LOGO_URL     = detectLogo();
+  var COMPANY_NAME = detectName();
 
   /* ── CSS custom property for brand colour ───────────────────── */
   document.documentElement.style.setProperty('--cw-brand', BRAND_COLOR);
