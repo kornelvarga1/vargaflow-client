@@ -1,69 +1,45 @@
 /**
  * review-link-clicked
  *
- * Trigger: POST webhook when the 5-star review funnel link is clicked
- * Payload: { business_id, contact_id, contact_first_name }
+ * Trigger: GET request from a customer clicking a review link in an SMS
+ * Query params: ?contact_id=xxx&business_id=xxx
  *
- * Inserts an activity_log row (activity_type = 'review_link_clicked') so that
- * review-request-sequence can detect the click in its check steps.
+ * Logs the click to activity_log, then 302-redirects the customer to the
+ * business's Google review link (gmb_review_link from settings).
  *
- * Settings columns used: my_name, my_phone, twilio_phone_number
+ * verify_jwt = false — no auth needed, customers click from SMS
  */
 
-import {
-  corsHeaders,
-  fetchSettings,
-  getSupabaseAdmin,
-  jsonResponse,
-  scheduleContactSMS,
-  scheduleOwnerSMS,
-} from "../_shared/helpers.ts";
+import { fetchSettings, getSupabaseAdmin } from "../_shared/helpers.ts";
+
+const FALLBACK_URL = "https://www.google.com/search?q=leave+a+review";
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+  const url = new URL(req.url);
+  const contact_id = url.searchParams.get("contact_id");
+  const business_id = url.searchParams.get("business_id");
+
+  if (!contact_id || !business_id) {
+    return Response.redirect(FALLBACK_URL, 302);
   }
 
   try {
-    const body = await req.json() as {
-      business_id: string;
-      contact_id: string;
-      contact_first_name: string;
-    };
-
-    const { business_id, contact_id, contact_first_name } = body;
-
     const supabase = getSupabaseAdmin();
-    const settings = await fetchSettings(supabase, business_id);
 
-    // Record the click so review-request-sequence check steps can detect it
-    const { error: logErr } = await supabase.from("activity_log").insert({
+    // Log the click (best-effort — don't block the redirect on failure)
+    await supabase.from("activity_log").insert({
       contact_id,
+      business_id,
       activity_type: "review_link_clicked",
-      description: `${contact_first_name} clicked the 5-star review link`,
-      metadata: { business_id },
-    });
-    if (logErr) throw new Error(`activity_log insert failed: ${logErr.message}`);
-
-    // Immediate internal SMS to owner
-    await scheduleOwnerSMS(supabase, {
-      to_phone: settings.my_phone,
-      contact_id,
-      delaySeconds: 0,
-      content:
-        `Hey ${settings.my_name}, ${contact_first_name} clicked on your 5-star review link. Hopefully they left a good review — but don't worry if they didn't, it won't get posted to your page. (Do not reply to this message - not the client)`,
+      description: "Customer clicked the Google review link",
     });
 
-    // Thank-you SMS to contact — 5 minutes
-    await scheduleContactSMS(supabase, {
-      contact_id,
-      delaySeconds: 300,
-      content: `Thank you for reviewing us. It means the world to our small business.`,
-    });
+    const settings = await fetchSettings(supabase, business_id);
+    const destination = settings?.gmb_review_link ?? FALLBACK_URL;
 
-    return jsonResponse({ success: true });
+    return Response.redirect(destination, 302);
   } catch (err) {
     console.error("[review-link-clicked]", err);
-    return jsonResponse({ error: (err as Error).message }, 500);
+    return Response.redirect(FALLBACK_URL, 302);
   }
 });

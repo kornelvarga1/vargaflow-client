@@ -34,22 +34,44 @@ export async function upsertContact(
     lead_source?: string;
   },
 ) {
-  const { data, error } = await supabase
+  // Use explicit select → update/insert instead of .upsert() because our unique
+  // index on (phone, business_id) is a PARTIAL index (WHERE NOT NULL), which
+  // PostgreSQL's ON CONFLICT column inference does not support via the JS client.
+  const { data: existing } = await supabase
     .from("contacts")
-    .upsert(
-      {
+    .select("id")
+    .eq("phone", params.phone)
+    .eq("business_id", params.business_id)
+    .maybeSingle();
+
+  if (existing) {
+    const { data, error } = await supabase
+      .from("contacts")
+      .update({
         full_name: params.full_name,
-        phone: params.phone,
         email: params.email ?? null,
-        business_id: params.business_id,
         lead_source: params.lead_source ?? "Other",
         updated_at: new Date().toISOString(),
-      },
-      { onConflict: "phone,business_id" },
-    )
+      })
+      .eq("id", existing.id)
+      .select()
+      .single();
+    if (error) throw new Error(`Contact update failed: ${error.message}`);
+    return data;
+  }
+
+  const { data, error } = await supabase
+    .from("contacts")
+    .insert({
+      full_name: params.full_name,
+      phone: params.phone,
+      email: params.email ?? null,
+      business_id: params.business_id,
+      lead_source: params.lead_source ?? "Other",
+    })
     .select()
     .single();
-  if (error) throw new Error(`Contact upsert failed: ${error.message}`);
+  if (error) throw new Error(`Contact insert failed: ${error.message}`);
   return data;
 }
 

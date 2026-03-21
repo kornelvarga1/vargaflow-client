@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.one-year-followup-entry]
 verify_jwt = false
+
+[functions.review-link-clicked]
+verify_jwt = false

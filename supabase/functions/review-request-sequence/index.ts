@@ -74,7 +74,7 @@ Deno.serve(async (req) => {
         contact_id,
         delaySeconds: 0,
         content:
-          `Hey ${contact_first_name}, this is ${my_name}. I hope you had a great experience with ${company_name}. We donate a meal to charity for every customer who takes 10 seconds to leave a review. Here is the link: ${gmb_review_link}`,
+          `Hey ${contact_first_name}, this is ${my_name}. I hope you had a great experience with ${company_name}. We donate a meal to charity for every customer who takes 10 seconds to leave a review. Here is the link: https://zfmchywjmgykmlhjihls.supabase.co/functions/v1/review-link-clicked?contact_id=${contact_id}&business_id=${business_id}`,
       });
       await scheduleFunctionCall(supabase, {
         function_name: "review-request-sequence",
@@ -98,7 +98,7 @@ Deno.serve(async (req) => {
         contact_id,
         delaySeconds: 0,
         content:
-          `Hey ${contact_first_name}, I wanted to follow up because I saw you haven't left a review yet. We donate a meal to charity for every customer that leaves a review. If you have 10 seconds to help someone you know or don't know, you are our kind of people. Click here: ${gmb_review_link} PS - just say 'bye' if you want me to stop texting you`,
+          `Hey ${contact_first_name}, I wanted to follow up because I saw you haven't left a review yet. We donate a meal to charity for every customer that leaves a review. If you have 10 seconds to help someone you know or don't know, you are our kind of people. Click here: https://zfmchywjmgykmlhjihls.supabase.co/functions/v1/review-link-clicked?contact_id=${contact_id}&business_id=${business_id} PS - just say 'bye' if you want me to stop texting you`,
       });
       await scheduleFunctionCall(supabase, {
         function_name: "review-request-sequence",
@@ -122,7 +122,7 @@ Deno.serve(async (req) => {
         contact_id,
         delaySeconds: 0,
         content:
-          `Little review reminder in case you got extra busy this week. (We give a free meal to someone in need for each new review.) Here is the link again: ${gmb_review_link}`,
+          `Little review reminder in case you got extra busy this week. (We give a free meal to someone in need for each new review.) Here is the link again: https://zfmchywjmgykmlhjihls.supabase.co/functions/v1/review-link-clicked?contact_id=${contact_id}&business_id=${business_id}`,
       });
       await scheduleFunctionCall(supabase, {
         function_name: "review-request-sequence",
@@ -146,7 +146,7 @@ Deno.serve(async (req) => {
         contact_id,
         delaySeconds: 0,
         content:
-          `Hey ${contact_first_name}, this is the last time I will request a review from you, I promise. If you have a sec to leave one, we will donate a meal to a person in need. Here's the link — and thanks for helping those in need: ${gmb_review_link}`,
+          `Hey ${contact_first_name}, this is the last time I will request a review from you, I promise. If you have a sec to leave one, we will donate a meal to a person in need. Here's the link — and thanks for helping those in need: https://zfmchywjmgykmlhjihls.supabase.co/functions/v1/review-link-clicked?contact_id=${contact_id}&business_id=${business_id}`,
       });
       await scheduleFunctionCall(supabase, {
         function_name: "review-request-sequence",
@@ -170,7 +170,7 @@ Deno.serve(async (req) => {
         contact_id,
         delaySeconds: 0,
         content:
-          `Hey ${my_name}, we have attempted to get ${contact_first_name} to leave you a review 4 times over the course of the last month. Try to get in touch with them directly to leave your review — they will have the link in their text messages. Here is your direct review link again: ${gmb_review_link}`,
+          `Hey ${my_name}, we have attempted to get ${contact_first_name} to leave you a review 4 times over the course of the last month. Try to get in touch with them directly to leave your review — they will have the link in their text messages. Here is your direct review link again: https://zfmchywjmgykmlhjihls.supabase.co/functions/v1/review-link-clicked?contact_id=${contact_id}&business_id=${business_id}`,
       });
     } else {
       console.warn(`[review-request-sequence] Unknown step: ${step}`);
