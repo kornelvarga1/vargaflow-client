@@ -128,9 +128,7 @@ function StatCard({
       >
         <CardContent className="p-4 flex flex-col gap-3">
           <div className="flex items-center justify-between">
-            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${highlight ? "bg-accent/15" : "bg-accent/10"}`}>
-              <Icon className="w-4 h-4 text-accent" />
-            </div>
+            <Icon className="w-4 h-4 text-muted-foreground" />
             <ArrowRight className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
           </div>
           <div>
