@@ -123,18 +123,18 @@ function StatCard({
     <Link to={to}>
       <Card
         className={`bg-card border-border shadow-card hover:shadow-glow transition-shadow cursor-pointer group ${
-          highlight ? "border-teal-400/50" : ""
+          highlight ? "border-accent/50" : ""
         }`}
       >
         <CardContent className="p-4 flex flex-col gap-3">
           <div className="flex items-center justify-between">
-            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${highlight ? "bg-teal-500/15" : "bg-teal-500/10"}`}>
-              <Icon className={`w-4 h-4 ${highlight ? "text-teal-700" : "text-teal-600"}`} />
+            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${highlight ? "bg-accent/15" : "bg-accent/10"}`}>
+              <Icon className="w-4 h-4 text-accent" />
             </div>
             <ArrowRight className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
           </div>
           <div>
-            <p className={`text-2xl font-display font-bold ${highlight ? "text-teal-700" : ""}`}>{value}</p>
+            <p className={`text-2xl font-display font-bold ${highlight ? "text-accent" : ""}`}>{value}</p>
             <p className="text-xs text-muted-foreground">{label}</p>
           </div>
         </CardContent>
