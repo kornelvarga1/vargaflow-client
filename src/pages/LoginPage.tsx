@@ -48,11 +48,11 @@ export default function LoginPage() {
       <div className="w-full max-w-sm space-y-8">
         {/* Wordmark */}
         <div className="flex flex-col items-center gap-3">
-          <div className="w-12 h-12 rounded-xl bg-teal-500/10 flex items-center justify-center">
-            <Zap className="w-6 h-6 text-teal-600" />
+          <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+            <Zap className="w-6 h-6 text-primary" />
           </div>
           <div className="text-center">
-            <h1 className="text-2xl font-display font-bold text-teal-700">Client Portal</h1>
+            <h1 className="text-2xl font-display font-bold text-primary">Client Portal</h1>
             <p className="text-sm text-muted-foreground mt-1">Sign in to your account</p>
           </div>
         </div>
@@ -76,7 +76,7 @@ export default function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="bg-white"
+              className="bg-input"
             />
           </div>
 
@@ -90,7 +90,7 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="bg-white"
+              className="bg-input"
             />
           </div>
 
@@ -107,7 +107,7 @@ export default function LoginPage() {
           <button
             type="button"
             onClick={handleForgotPassword}
-            className="text-sm text-teal-600 hover:text-teal-700 hover:underline transition-colors"
+            className="text-sm text-primary hover:text-primary/80 hover:underline transition-colors"
           >
             {forgotSent ? "Check your inbox" : "Forgot password?"}
           </button>

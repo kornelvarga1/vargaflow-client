@@ -21,10 +21,10 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   return (
     <div className="flex h-screen overflow-hidden">
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex w-60 flex-col border-r border-border bg-sidebar shrink-0 border-t-[3px] border-t-teal-600">
+      <aside className="hidden md:flex w-60 flex-col border-r border-border bg-sidebar shrink-0 border-t-[3px] border-t-primary">
         <div className="flex items-center gap-2 px-5 py-4 border-b border-border">
-          <Zap className="w-4 h-4 text-teal-600 shrink-0" />
-          <span className="text-[17px] font-display font-bold text-teal-700 tracking-tight">Client Portal</span>
+          <Zap className="w-4 h-4 text-primary shrink-0" />
+          <span className="text-[17px] font-display font-bold text-sidebar-foreground tracking-tight">Client Portal</span>
         </div>
         <nav className="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto">
           {navItems.map((item) => (
@@ -35,8 +35,8 @@ export default function AppLayout({ children }: { children: ReactNode }) {
               className={({ isActive }) =>
                 `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                   isActive
-                    ? "bg-teal-500/10 text-teal-700 shadow-sm"
-                    : "text-muted-foreground hover:text-foreground hover:bg-secondary/70"
+                    ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
+                    : "text-sidebar-foreground hover:text-foreground hover:bg-sidebar-accent/50"
                 }`
               }
             >
@@ -66,8 +66,8 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           <aside className="relative w-64 bg-sidebar border-r border-border flex flex-col animate-slide-in-right">
             <div className="flex items-center justify-between px-5 py-4 border-b border-border">
               <div className="flex items-center gap-2">
-                <Zap className="w-4 h-4 text-teal-600 shrink-0" />
-                <span className="text-[17px] font-display font-bold text-teal-700 tracking-tight">Client Portal</span>
+                <Zap className="w-4 h-4 text-primary shrink-0" />
+                <span className="text-[17px] font-display font-bold text-sidebar-foreground tracking-tight">Client Portal</span>
               </div>
               <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setMobileMenuOpen(false)}>
                 <X className="w-4 h-4" />
@@ -109,10 +109,10 @@ export default function AppLayout({ children }: { children: ReactNode }) {
               key={item.to}
               to={item.to}
               className={`flex-1 flex flex-col items-center gap-0.5 py-2 text-[10px] font-medium transition-all active-press ${
-                isActive ? "text-teal-700" : "text-muted-foreground"
+                isActive ? "text-primary" : "text-muted-foreground"
               }`}
             >
-              <div className={`p-1 rounded-md transition-colors ${isActive ? "bg-teal-500/15" : ""}`}>
+              <div className={`p-1 rounded-md transition-colors ${isActive ? "bg-primary/15" : ""}`}>
                 <item.icon className="w-4 h-4" />
               </div>
               <span>{item.label.split(" ")[0]}</span>
