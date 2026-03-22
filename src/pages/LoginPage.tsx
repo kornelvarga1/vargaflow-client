@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/useAuth";
 import { Input } from "@/components/ui/input";
@@ -10,6 +10,8 @@ import { toast } from "sonner";
 
 export default function LoginPage() {
   const { session } = useAuth();
+  const [searchParams] = useSearchParams();
+  const errorMessage = searchParams.get("error");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -54,6 +56,13 @@ export default function LoginPage() {
             <p className="text-sm text-muted-foreground mt-1">Sign in to your account</p>
           </div>
         </div>
+
+        {/* Access error banner */}
+        {errorMessage && (
+          <div className="rounded-lg bg-destructive/10 border border-destructive/20 px-4 py-3 text-sm text-destructive text-center">
+            {errorMessage}
+          </div>
+        )}
 
         {/* Form */}
         <form onSubmit={handleSignIn} className="space-y-4">
