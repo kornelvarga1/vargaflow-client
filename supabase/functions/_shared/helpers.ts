@@ -93,14 +93,22 @@ export async function addTag(supabase: SupabaseClient, contactId: string, tag: s
   if (error) throw new Error(`Failed to add tag: ${error.message}`);
 }
 
-// Schedule an SMS to a contact — recipient phone resolved from contacts table by the queue processor
+// Schedule an SMS to a contact — resolves phone from contacts table and sets to_phone
 export async function scheduleContactSMS(
   supabase: SupabaseClient,
   params: { contact_id: string; content: string; delaySeconds: number },
 ) {
+  const { data: contact } = await supabase
+    .from("contacts")
+    .select("phone")
+    .eq("id", params.contact_id)
+    .single();
+  const toPhone = contact?.phone ?? null;
+
   const scheduledAt = new Date(Date.now() + params.delaySeconds * 1000).toISOString();
   const { error } = await supabase.from("message_queue").insert({
     contact_id: params.contact_id,
+    to_phone: toPhone,
     message_content: params.content,
     message_type: "sms",
     scheduled_at: scheduledAt,
@@ -109,19 +117,19 @@ export async function scheduleContactSMS(
   if (error) throw new Error(`scheduleContactSMS failed: ${error.message}`);
 }
 
-// Schedule an internal SMS to the owner (to_phone explicitly set, contact_id optional for audit)
+// Schedule an internal SMS to the owner (to_phone explicitly set, contact_id required for FK)
 export async function scheduleOwnerSMS(
   supabase: SupabaseClient,
   params: {
     to_phone: string;
     content: string;
     delaySeconds: number;
-    contact_id?: string;
+    contact_id: string;
   },
 ) {
   const scheduledAt = new Date(Date.now() + params.delaySeconds * 1000).toISOString();
   const { error } = await supabase.from("message_queue").insert({
-    contact_id: params.contact_id ?? null,
+    contact_id: params.contact_id,
     to_phone: params.to_phone,
     message_content: params.content,
     message_type: "internal_sms",
@@ -138,12 +146,12 @@ export async function scheduleFunctionCall(
     function_name: string;
     payload: Record<string, unknown>;
     delaySeconds: number;
-    contact_id?: string;
+    contact_id: string;
   },
 ) {
   const scheduledAt = new Date(Date.now() + params.delaySeconds * 1000).toISOString();
   const { error } = await supabase.from("message_queue").insert({
-    contact_id: params.contact_id ?? null,
+    contact_id: params.contact_id,
     message_content: `FUNCTION_CALL:${params.function_name}`,
     message_type: "function_call",
     scheduled_at: scheduledAt,

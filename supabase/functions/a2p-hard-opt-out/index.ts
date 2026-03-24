@@ -66,10 +66,10 @@ Deno.serve(async (req) => {
     // 2. Insert activity_log record
     const { error: logErr } = await supabase.from("activity_log").insert({
       contact_id,
+      business_id,
       activity_type: "sms_hard_opt_out",
       description:
         `SMS Hard Opt Out - Date: ${dateString}. Name: ${contact_first_name} ${contact_last_name}, Email: ${contact_email}, Phone: ${contact_phone}`,
-      metadata: { business_id },
     });
     if (logErr) throw new Error(`activity_log insert failed: ${logErr.message}`);
 
