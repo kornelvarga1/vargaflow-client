@@ -83,7 +83,10 @@ export default function JobCompletePage() {
       const endpoint = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/one-year-followup-entry`;
       const res = await fetch(endpoint, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "apikey": import.meta.env.VITE_SUPABASE_ANON_KEY,
+        },
         body: JSON.stringify({
           business_id,
           contact_first_name: name,

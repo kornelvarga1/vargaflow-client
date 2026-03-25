@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
+import { useBusinessId } from "@/hooks/useBusinessId";
 import { useCustomValues, replaceCustomValues } from "@/hooks/useCustomValues";
 import { logActivity } from "@/hooks/useActivityLog";
 import { SALES_STAGES, ONBOARDING_STAGES } from "@/hooks/useContacts";
@@ -25,8 +26,8 @@ import { toast } from "sonner";
 import { format, formatDistanceToNow } from "date-fns";
 
 const ALL_STAGES = [
-  ...SALES_STAGES.map((s) => ({ ...s, pipeline: "sales" })),
-  ...ONBOARDING_STAGES.map((s) => ({ ...s, pipeline: "onboarding" })),
+  ...SALES_STAGES.map((s) => ({ ...s, pipeline: "Sales" })),
+  ...ONBOARDING_STAGES.map((s) => ({ ...s, pipeline: "Onboarding" })),
 ];
 
 type ConversationContact = {
@@ -54,15 +55,18 @@ type Message = {
 
 // --- Hooks ---
 
-function useConversationContacts() {
+function useConversationContacts(businessId: string | undefined) {
   return useQuery({
-    queryKey: ["conversation_contacts"],
+    queryKey: ["conversation_contacts", businessId],
+    enabled: !!businessId,
     queryFn: async () => {
       // Get all messages grouped by contact
       const { data: messages, error } = await supabase
         .from("message_queue")
         .select("contact_id, message_content, scheduled_at, sent_at, status, message_type, created_at")
-        .order("scheduled_at", { ascending: false });
+        .eq("business_id", businessId!)
+        .order("scheduled_at", { ascending: false })
+        .limit(500);
 
       if (error) throw error;
 
@@ -116,17 +120,18 @@ function useConversationContacts() {
   });
 }
 
-function useConversation(contactId: string | null) {
+function useConversation(contactId: string | null, businessId: string | undefined) {
   const { data: customValues = [] } = useCustomValues();
 
   return useQuery({
-    queryKey: ["conversation", contactId],
-    enabled: !!contactId,
+    queryKey: ["conversation", contactId, businessId],
+    enabled: !!contactId && !!businessId,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("message_queue")
         .select("*")
         .eq("contact_id", contactId!)
+        .eq("business_id", businessId!)
         .order("scheduled_at", { ascending: true });
 
       if (error) throw error;
@@ -184,8 +189,9 @@ export default function MessageQueuePage() {
   const [selectedContactId, setSelectedContactId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<FilterType>("all");
-  const { data: contacts = [], isLoading: contactsLoading } = useConversationContacts();
-  const { data: messages = [], isLoading: msgsLoading } = useConversation(selectedContactId);
+  const { data: businessId } = useBusinessId();
+  const { data: contacts = [], isLoading: contactsLoading } = useConversationContacts(businessId);
+  const { data: messages = [], isLoading: msgsLoading } = useConversation(selectedContactId, businessId);
   const { data: activeSeq } = useContactActiveSequence(selectedContactId);
   const scrollRef = useRef<HTMLDivElement>(null);
   const qc = useQueryClient();
@@ -329,7 +335,7 @@ export default function MessageQueuePage() {
                     </div>
                     <div className="flex items-center gap-2 mt-0.5">
                       <Badge variant="outline" className="text-[10px] border-primary/40 text-primary">
-                        {selectedContact.pipeline === "onboarding" ? "Onboarding" : "Sales"}
+                        {selectedContact.pipeline === "Onboarding" ? "Onboarding" : "Sales"}
                       </Badge>
                       <Badge variant="secondary" className="text-[10px]">
                         {stageLabel(selectedContact.stage, selectedContact.pipeline)}
@@ -444,12 +450,22 @@ function ComposeBar({
     if (!text.trim()) return;
     setSending(true);
     try {
+      // Fetch business_id from contact
+      const { data: contactData } = await supabase
+        .from("contacts")
+        .select("business_id")
+        .eq("id", contactId)
+        .single();
+
       const { error } = await supabase.from("message_queue").insert({
         contact_id: contactId,
         message_content: text.trim(),
         message_type: "sms",
         scheduled_at: new Date().toISOString(),
         status: "pending",
+        to_phone: contactPhone || null,
+        business_id: contactData?.business_id || null,
+        metadata: { to: contactPhone || null },
       });
       if (error) throw error;
 

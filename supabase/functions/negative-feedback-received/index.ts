@@ -24,7 +24,7 @@ Deno.serve(async (req) => {
   try {
     const body = await req.json() as {
       business_id: string;
-      contact_id: string;
+      contact_id: string | null;
       contact_first_name: string;
       star_rating: number;
       feedback_text: string;
@@ -35,12 +35,14 @@ Deno.serve(async (req) => {
     const supabase = getSupabaseAdmin();
     const settings = await fetchSettings(supabase, business_id);
 
-    await addTag(supabase, contact_id, "negative feedback");
+    if (contact_id) {
+      await addTag(supabase, contact_id, "negative feedback");
+    }
 
     // Immediate internal SMS to owner
     await scheduleOwnerSMS(supabase, {
       to_phone: settings.my_phone,
-      contact_id,
+      contact_id: contact_id ?? undefined,
       delaySeconds: 0,
       content:
         `Hey ${settings.my_name}, heads up — ${contact_first_name} attempted to leave a negative review (${star_rating} stars or lower). We have blocked it from showing on your public page. Here is their feedback: ${feedback_text} (Do not reply to this message - not the client)`,

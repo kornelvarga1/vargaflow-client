@@ -19,20 +19,22 @@ Deno.serve(async (req) => {
   const contact_id = url.searchParams.get("contact_id");
   const business_id = url.searchParams.get("business_id");
 
-  if (!contact_id || !business_id) {
+  if (!business_id) {
     return Response.redirect(FALLBACK_URL, 302);
   }
 
   try {
     const supabase = getSupabaseAdmin();
 
-    // Log the click (best-effort — don't block the redirect on failure)
-    await supabase.from("activity_log").insert({
-      contact_id,
-      business_id,
-      activity_type: "review_link_clicked",
-      description: "Customer clicked the Google review link",
-    });
+    // Log the click (best-effort — only if we have a contact_id)
+    if (contact_id) {
+      await supabase.from("activity_log").insert({
+        contact_id,
+        business_id,
+        activity_type: "review_link_clicked",
+        description: "Customer clicked the Google review link",
+      });
+    }
 
     const settings = await fetchSettings(supabase, business_id);
     const destination = settings?.gmb_review_link ?? FALLBACK_URL;

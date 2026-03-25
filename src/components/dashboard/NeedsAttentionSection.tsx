@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
+import { useBusinessId } from "@/hooks/useBusinessId";
 import { SALES_STAGES, ONBOARDING_STAGES } from "@/hooks/useContacts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -18,8 +19,8 @@ import {
 import { differenceInDays, formatDistanceToNow } from "date-fns";
 
 const ALL_STAGES = [
-  ...SALES_STAGES.map((s) => ({ ...s, pipeline: "sales" })),
-  ...ONBOARDING_STAGES.map((s) => ({ ...s, pipeline: "onboarding" })),
+  ...SALES_STAGES.map((s) => ({ ...s, pipeline: "Sales" })),
+  ...ONBOARDING_STAGES.map((s) => ({ ...s, pipeline: "Onboarding" })),
 ];
 
 interface AttentionItem {
@@ -32,22 +33,26 @@ interface AttentionItem {
 }
 
 function useNeedsAttention() {
+  const { data: businessId } = useBusinessId();
   return useQuery({
-    queryKey: ["needs_attention"],
+    queryKey: ["needs_attention", businessId],
+    enabled: !!businessId,
     queryFn: async () => {
       const items: AttentionItem[] = [];
 
       // Fetch all in parallel
       const [contactsRes, failedSeqRes, repliedRes] = await Promise.all([
-        supabase.from("contacts").select("id, full_name, stage, pipeline, stage_entered_at"),
+        supabase.from("contacts").select("id, full_name, stage, pipeline, stage_entered_at").eq("business_id", businessId!),
         supabase
           .from("contact_sequences")
           .select("id, contact_id, status, updated_at, contacts(full_name), sequences(name)")
-          .eq("status", "failed"),
+          .eq("status", "failed")
+          .eq("business_id", businessId!),
         supabase
           .from("activity_log")
           .select("id, contact_id, description, created_at, contacts(full_name)")
           .eq("activity_type", "marked_replied")
+          .eq("business_id", businessId!)
           .order("created_at", { ascending: false })
           .limit(10),
       ]);
@@ -56,27 +61,28 @@ function useNeedsAttention() {
       const now = new Date();
 
       // No-showed Zoom contacts
-      const noShowed = contacts.filter((c) => c.stage === "no_showed_zoom");
+      const noShowed = contacts.filter((c) => c.stage === "No Showed to Zoom");
       for (const c of noShowed) {
         items.push({
           id: `noshow-${c.id}`,
           contactId: c.id,
           contactName: c.full_name,
           type: "no_show",
-          description: `No-showed Zoom — ${formatDistanceToNow(new Date(c.stage_entered_at), { addSuffix: true })}`,
+          description: `No-showed Zoom — ${c.stage_entered_at ? formatDistanceToNow(new Date(c.stage_entered_at), { addSuffix: true }) : "unknown time"}`,
           timestamp: c.stage_entered_at,
         });
       }
 
       // Stale contacts (same stage for 5+ days)
       for (const c of contacts) {
+        if (!c.stage_entered_at) continue;
         const days = differenceInDays(now, new Date(c.stage_entered_at));
         if (days >= 5) {
           // Skip terminal stages
-          const terminalStages = ["client_closed", "client_churned", "approved_retainer"];
+          const terminalStages = ["Client Closed", "Client Churned", "Approved Retainer"];
           if (terminalStages.includes(c.stage)) continue;
           // Skip if already in no_show list
-          if (c.stage === "no_showed_zoom") continue;
+          if (c.stage === "No Showed to Zoom") continue;
 
           const stageLabel = ALL_STAGES.find((s) => s.key === c.stage && s.pipeline === c.pipeline)?.label || c.stage;
           items.push({

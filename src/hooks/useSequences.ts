@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
+import { useBusinessId } from "@/hooks/useBusinessId";
 import type { Tables, TablesInsert } from "@/integrations/supabase/types";
 
 export type Sequence = Tables<"sequences">;
@@ -8,16 +9,19 @@ export type ContactSequence = Tables<"contact_sequences">;
 export type MessageQueue = Tables<"message_queue">;
 
 export function useSequences() {
+  const { data: businessId } = useBusinessId();
   return useQuery({
-    queryKey: ["sequences"],
+    queryKey: ["sequences", businessId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("sequences")
         .select("*")
+        .eq("business_id", businessId!)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data as Sequence[];
     },
+    enabled: !!businessId,
   });
 }
 
@@ -175,18 +179,21 @@ export function useStopContactSequences() {
 }
 
 export function useMessageQueue(status?: string) {
+  const { data: businessId } = useBusinessId();
   return useQuery({
-    queryKey: ["message_queue", status],
+    queryKey: ["message_queue", status, businessId],
     queryFn: async () => {
       let query = supabase
         .from("message_queue")
         .select("*, contacts(full_name, email, phone)")
+        .eq("business_id", businessId!)
         .order("scheduled_at", { ascending: true });
       if (status) query = query.eq("status", status);
       const { data, error } = await query;
       if (error) throw error;
       return data;
     },
+    enabled: !!businessId,
   });
 }
 
@@ -230,19 +237,51 @@ export async function generateSequenceMessages(
 
   if (!steps || steps.length === 0) return;
 
+  const { data: contact } = await supabase
+    .from("contacts")
+    .select("phone, email, full_name, business_id")
+    .eq("id", contactId)
+    .single();
+
+  let settingsQuery = supabase
+    .from("settings")
+    .select("my_name, company_name, my_email, my_phone, website_url, onboarding_form_link, demo_calendar_link, launch_call_calendar_link");
+  if (contact?.business_id) {
+    settingsQuery = settingsQuery.eq("business_id", contact.business_id);
+  }
+  const { data: settings } = await settingsQuery.limit(1).single();
+
   const now = new Date();
   const messages = steps.map((step) => {
     const scheduledAt = new Date(now);
     scheduledAt.setHours(scheduledAt.getHours() + step.delay_hours);
     scheduledAt.setMinutes(scheduledAt.getMinutes() + step.delay_minutes);
 
+    const content = step.message_template
+      .replace(/\{\{contact_name\}\}/g, contact?.full_name?.split(' ')[0] || 'there')
+      .replace(/\{\{contact_first_name\}\}/g, contact?.full_name?.split(' ')[0] || 'there')
+      .replace(/\{\{my_name\}\}/g, settings?.my_name || '')
+      .replace(/\{\{company_name\}\}/g, settings?.company_name || '')
+      .replace(/\{\{onboarding_form_link\}\}/g, settings?.onboarding_form_link || '')
+      .replace(/\{\{my_email\}\}/g, settings?.my_email || '')
+      .replace(/\{\{my_phone\}\}/g, settings?.my_phone || '')
+      .replace(/\{\{website_url\}\}/g, settings?.website_url || '')
+      .replace(/\{\{demo_calendar_link\}\}/g, settings?.demo_calendar_link || '')
+      .replace(/\{\{launch_call_calendar_link\}\}/g, settings?.launch_call_calendar_link || '');
+
+    const isEmail = step.message_type === "email";
     return {
       contact_id: contactId,
       contact_sequence_id: contactSequenceId,
-      message_content: step.message_template,
+      message_content: content,
       message_type: step.message_type,
       scheduled_at: scheduledAt.toISOString(),
       status: "pending" as const,
+      to_phone: contact?.phone ?? null,
+      business_id: contact?.business_id ?? null,
+      metadata: isEmail
+        ? { to: contact?.email ?? null, subject: `Message from ${settings?.company_name || "your contractor"}` }
+        : { to: contact?.phone ?? null },
     };
   });
 

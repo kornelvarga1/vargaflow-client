@@ -124,12 +124,12 @@ export async function scheduleOwnerSMS(
     to_phone: string;
     content: string;
     delaySeconds: number;
-    contact_id: string;
+    contact_id?: string;
   },
 ) {
   const scheduledAt = new Date(Date.now() + params.delaySeconds * 1000).toISOString();
   const { error } = await supabase.from("message_queue").insert({
-    contact_id: params.contact_id,
+    contact_id: params.contact_id ?? null,
     to_phone: params.to_phone,
     message_content: params.content,
     message_type: "internal_sms",

@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
+import { useBusinessId } from "@/hooks/useBusinessId";
 
 export interface CustomValue {
   id: string;
@@ -11,16 +12,19 @@ export interface CustomValue {
 }
 
 export function useCustomValues() {
+  const { data: businessId } = useBusinessId();
   return useQuery({
-    queryKey: ["custom_values"],
+    queryKey: ["custom_values", businessId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("custom_values")
         .select("*")
+        .eq("business_id", businessId!)
         .order("sort_order");
       if (error) throw error;
       return data as CustomValue[];
     },
+    enabled: !!businessId,
   });
 }
 

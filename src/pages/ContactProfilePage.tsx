@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
+import { useBusinessId } from "@/hooks/useBusinessId";
 import { useUpdateContact, SALES_STAGES, ONBOARDING_STAGES, type Contact } from "@/hooks/useContacts";
 import { logActivity } from "@/hooks/useActivityLog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -35,8 +36,8 @@ import { toast } from "sonner";
 import { format, formatDistanceToNow } from "date-fns";
 
 const ALL_STAGES = [
-  ...SALES_STAGES.map((s) => ({ ...s, pipeline: "sales" as const })),
-  ...ONBOARDING_STAGES.map((s) => ({ ...s, pipeline: "onboarding" as const })),
+  ...SALES_STAGES.map((s) => ({ ...s, pipeline: "Sales" as const })),
+  ...ONBOARDING_STAGES.map((s) => ({ ...s, pipeline: "Onboarding" as const })),
 ];
 
 function getStageLabel(key: string, pipeline?: string) {
@@ -46,14 +47,16 @@ function getStageLabel(key: string, pipeline?: string) {
 
 // --- Hooks ---
 
-function useContact(id: string) {
+function useContact(id: string, businessId: string | undefined) {
   return useQuery({
-    queryKey: ["contact", id],
+    queryKey: ["contact", id, businessId],
+    enabled: !!businessId,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("contacts")
         .select("*")
         .eq("id", id)
+        .eq("business_id", businessId!)
         .single();
       if (error) throw error;
       return data as Contact;
@@ -61,14 +64,16 @@ function useContact(id: string) {
   });
 }
 
-function useContactActivity(contactId: string) {
+function useContactActivity(contactId: string, businessId: string | undefined) {
   return useQuery({
-    queryKey: ["contact_activity", contactId],
+    queryKey: ["contact_activity", contactId, businessId],
+    enabled: !!businessId,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("activity_log")
         .select("*")
         .eq("contact_id", contactId)
+        .eq("business_id", businessId!)
         .order("created_at", { ascending: false })
         .limit(100);
       if (error) throw error;
@@ -77,14 +82,16 @@ function useContactActivity(contactId: string) {
   });
 }
 
-function useContactMessages(contactId: string) {
+function useContactMessages(contactId: string, businessId: string | undefined) {
   return useQuery({
-    queryKey: ["contact_messages", contactId],
+    queryKey: ["contact_messages", contactId, businessId],
+    enabled: !!businessId,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("message_queue")
         .select("*")
         .eq("contact_id", contactId)
+        .eq("business_id", businessId!)
         .order("scheduled_at", { ascending: false });
       if (error) throw error;
       return data;
@@ -116,9 +123,10 @@ function getActivityIcon(type: string) {
 export default function ContactProfilePage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { data: contact, isLoading } = useContact(id!);
-  const { data: activities = [] } = useContactActivity(id!);
-  const { data: messages = [] } = useContactMessages(id!);
+  const { data: businessId } = useBusinessId();
+  const { data: contact, isLoading } = useContact(id!, businessId);
+  const { data: activities = [] } = useContactActivity(id!, businessId);
+  const { data: messages = [] } = useContactMessages(id!, businessId);
   const qc = useQueryClient();
 
   const [smsDialogOpen, setSmsDialogOpen] = useState(false);
@@ -141,7 +149,7 @@ export default function ContactProfilePage() {
   }
 
   const stageLabel = getStageLabel(contact.stage, contact.pipeline);
-  const pipelineLabel = contact.pipeline === "onboarding" ? "Onboarding" : "Sales";
+  const pipelineLabel = contact.pipeline === "Onboarding" ? "Onboarding" : "Sales";
 
   // Merge activities and sent messages into a unified timeline
   const timeline = [
@@ -337,6 +345,9 @@ function SendSmsDialog({
       message_type: "sms",
       scheduled_at: new Date().toISOString(),
       status: "pending",
+      to_phone: contact.phone || null,
+      business_id: contact.business_id,
+      metadata: { to: contact.phone || null },
     });
 
     if (error) {
