@@ -1,27 +1,35 @@
 /**
  * missed-call-text-back
  *
- * Trigger: POST webhook from Twilio (voice status callback)
- * Fires only for inbound calls with status: busy | canceled | voicemail | no-answer
+ * Handles two Twilio webhooks for the same URL:
+ *
+ * 1. "A call comes in" (initial webhook) — CallStatus is absent or "ringing".
+ *    Returns TwiML to play a brief message then hang up.
+ *
+ * 2. "Call status changes" (status callback) — CallStatus is a final status.
+ *    Queues two SMS messages to the caller if the call was missed.
  *
  * Required env vars:
  *   SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
- *   TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN
- *   (FROM number comes from settings.twilio_phone_number)
  */
 
 import {
   addTag,
   corsHeaders,
   fetchSettings,
-  getFirstName,
   getSupabaseAdmin,
   jsonResponse,
   scheduleContactSMS,
   upsertContact,
 } from "../_shared/helpers.ts";
 
-const MISSED_STATUSES = new Set(["busy", "canceled", "voicemail", "no-answer"]);
+const MISSED_STATUSES = new Set(["busy", "canceled", "voicemail", "no-answer", "completed"]);
+
+const twimlResponse = (xml: string) =>
+  new Response(xml, {
+    status: 200,
+    headers: { ...corsHeaders, "Content-Type": "application/xml" },
+  });
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -29,33 +37,66 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const body = await req.json() as {
-      To: string;
-      From: string;
-      CallStatus: string;
-      CallDirection: string;
-      business_id: string;
-    };
+    // Twilio sends application/x-www-form-urlencoded, not JSON
+    const formData = await req.formData();
+    const get = (key: string) => formData.get(key)?.toString() ?? "";
 
-    const { To, From, CallStatus, CallDirection, business_id } = body;
+    const To = get("To");
+    const From = get("From");
+    const CallStatus = get("CallStatus");
 
-    if (CallDirection !== "inbound" || !MISSED_STATUSES.has(CallStatus?.toLowerCase())) {
-      return jsonResponse({ skipped: true, reason: "Not a missed inbound call" });
+    console.log(`[missed-call-text-back] To="${To}" From="${From}" CallStatus="${CallStatus}"`);
+
+    // ── Scenario 1: Initial "call comes in" webhook ───────────────────────────
+    // CallStatus is absent or "ringing" — return TwiML, do not queue SMS yet.
+    if (!CallStatus || CallStatus === "ringing") {
+      return twimlResponse(
+        `<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+  <Say voice="alice">Sorry we missed your call. We'll text you shortly.</Say>
+  <Hangup/>
+</Response>`,
+      );
+    }
+
+    // ── Scenario 2: "Call status changes" callback ────────────────────────────
+    // Normalize CallStatus — Twilio may send "no-answer" or "noAnswer"
+    const normalizedStatus = CallStatus.toLowerCase().replace("noanswer", "no-answer");
+    if (!MISSED_STATUSES.has(normalizedStatus)) {
+      return jsonResponse({ skipped: true, reason: `CallStatus "${CallStatus}" is not a missed-call status` });
     }
 
     const supabase = getSupabaseAdmin();
+
+    // Resolve business_id: prefer query param, otherwise look up by Twilio phone number
+    const urlParams = new URL(req.url).searchParams;
+    let business_id = urlParams.get("business_id") ?? "";
+
+    if (!business_id && To) {
+      console.log(`[missed-call-text-back] Looking up business by To number: "${To}"`);
+      const { data } = await supabase
+        .from("settings")
+        .select("business_id, twilio_phone_number")
+        .eq("twilio_phone_number", To)
+        .maybeSingle();
+      console.log(`[missed-call-text-back] settings row found: ${JSON.stringify(data)}`);
+      business_id = data?.business_id ?? "";
+    }
+
+    if (!business_id) {
+      return jsonResponse({ error: `No business found for number ${To}` }, 400);
+    }
+
     const settings = await fetchSettings(supabase, business_id);
 
     const contact = await upsertContact(supabase, {
-      full_name: From,     // placeholder — CRM can update name later
+      full_name: From,
       phone: From,
       business_id,
       lead_source: "Missed Call",
     });
 
     await addTag(supabase, contact.id, "missed-call");
-
-    const firstName = getFirstName(contact.full_name);
 
     // Message 1 — 1 minute delay
     await scheduleContactSMS(supabase, {

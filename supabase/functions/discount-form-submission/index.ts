@@ -11,10 +11,12 @@ import {
   addTag,
   corsHeaders,
   fetchSettings,
+  getFirstName,
   getSupabaseAdmin,
   jsonResponse,
   scheduleContactSMS,
   scheduleOwnerSMS,
+  upsertContact,
 } from "../_shared/helpers.ts";
 
 Deno.serve(async (req) => {
@@ -25,18 +27,27 @@ Deno.serve(async (req) => {
   try {
     const body = await req.json() as {
       business_id: string;
-      contact_id: string;
-      contact_first_name: string;
+      contact_name: string;
       contact_phone: string;
-      contact_message: string;
+      message: string;
     };
 
-    const { business_id, contact_id, contact_first_name, contact_phone, contact_message } = body;
+    const { business_id, contact_name, contact_phone, message } = body;
 
     const supabase = getSupabaseAdmin();
     const settings = await fetchSettings(supabase, business_id);
 
-    await addTag(supabase, contact_id, "referral lead");
+    const contact = await upsertContact(supabase, {
+      full_name: contact_name,
+      phone: contact_phone,
+      business_id,
+      lead_source: "Discount Form",
+    });
+
+    const contact_id = contact.id;
+    const contact_first_name = getFirstName(contact_name);
+
+    await addTag(supabase, contact_id, "discount-form-lead");
 
     // Immediate internal SMS to owner
     await scheduleOwnerSMS(supabase, {
@@ -44,7 +55,7 @@ Deno.serve(async (req) => {
       contact_id,
       delaySeconds: 0,
       content:
-        `Hey ${settings.my_name}, ${contact_first_name} just filled out your disc form on the website. Info: Name: ${contact_first_name}, Phone: ${contact_phone}, Message: ${contact_message}. We have told them you will be reaching out soon. (Do not reply to this message - not the client)`,
+        `Hey ${settings.my_name}, ${contact_first_name} just filled out your disc form on the website. Info: Name: ${contact_name}, Phone: ${contact_phone}, Message: ${message}. We have told them you will be reaching out soon. (Do not reply to this message - not the client)`,
     });
 
     // SMS to contact — 2 minutes

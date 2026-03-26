@@ -11,3 +11,18 @@ verify_jwt = false
 
 [functions.review-link-clicked]
 verify_jwt = false
+
+[functions.review-request-sequence]
+verify_jwt = false
+
+[functions.one-year-referral-sequence]
+verify_jwt = false
+
+[functions.review-link-check]
+verify_jwt = false
+
+[functions.marketing-form-reminder]
+verify_jwt = false
+
+[functions.missed-call-text-back]
+verify_jwt = false
