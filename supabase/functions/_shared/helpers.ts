@@ -96,7 +96,7 @@ export async function addTag(supabase: SupabaseClient, contactId: string, tag: s
 // Schedule an SMS to a contact — resolves phone from contacts table and sets to_phone
 export async function scheduleContactSMS(
   supabase: SupabaseClient,
-  params: { contact_id: string; content: string; delaySeconds: number },
+  params: { contact_id: string; content: string; delaySeconds: number; business_id?: string },
 ) {
   const { data: contact } = await supabase
     .from("contacts")
@@ -108,6 +108,7 @@ export async function scheduleContactSMS(
   const scheduledAt = new Date(Date.now() + params.delaySeconds * 1000).toISOString();
   const { error } = await supabase.from("message_queue").insert({
     contact_id: params.contact_id,
+    business_id: params.business_id ?? null,
     to_phone: toPhone,
     message_content: params.content,
     message_type: "sms",
@@ -125,11 +126,13 @@ export async function scheduleOwnerSMS(
     content: string;
     delaySeconds: number;
     contact_id?: string;
+    business_id?: string;
   },
 ) {
   const scheduledAt = new Date(Date.now() + params.delaySeconds * 1000).toISOString();
   const { error } = await supabase.from("message_queue").insert({
     contact_id: params.contact_id ?? null,
+    business_id: params.business_id ?? null,
     to_phone: params.to_phone,
     message_content: params.content,
     message_type: "internal_sms",

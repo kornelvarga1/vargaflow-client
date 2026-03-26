@@ -60,6 +60,7 @@ Deno.serve(async (req) => {
     // Message 1 — 1 minute delay
     await scheduleContactSMS(supabase, {
       contact_id: contact.id,
+      business_id,
       delaySeconds: 60,
       content:
         `Hey, sorry I missed you. I will get back to you as soon as possible. If you want to give me a few details about the job, that would be great. You can click this link for a free quote: ${settings.quote_form_link} — ${settings.my_name} from ${settings.company_name}`,
@@ -68,6 +69,7 @@ Deno.serve(async (req) => {
     // Message 2 — 3 minutes delay
     await scheduleContactSMS(supabase, {
       contact_id: contact.id,
+      business_id,
       delaySeconds: 180,
       content:
         `Look forward to hearing from you. In the meantime, are there any questions I can answer here for you?`,

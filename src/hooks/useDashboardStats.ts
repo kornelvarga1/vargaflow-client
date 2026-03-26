@@ -24,8 +24,9 @@ export function useDashboardStats() {
           .eq("business_id", businessId!),
         supabase
           .from("message_queue")
-          .select("status")
-          .eq("business_id", businessId!),
+          .select("status, message_type")
+          .eq("business_id", businessId!)
+          .not("message_type", "in", '("internal_sms","function_call")'),
       ]);
 
       const contacts = contactsRes.data || [];

@@ -72,6 +72,7 @@ Deno.serve(async (req) => {
       const smsSentAt = new Date().toISOString();
       await scheduleContactSMS(supabase, {
         contact_id,
+        business_id,
         delaySeconds: 0,
         content:
           `Hey ${contact_first_name}, this is ${my_name}. I hope you had a great experience with ${company_name}. We donate a meal to charity for every customer who takes 10 seconds to leave a review. Here is the link: https://zfmchywjmgykmlhjihls.supabase.co/functions/v1/review-link-clicked?contact_id=${contact_id}&business_id=${business_id}`,
@@ -96,6 +97,7 @@ Deno.serve(async (req) => {
       const smsSentAt = new Date().toISOString();
       await scheduleContactSMS(supabase, {
         contact_id,
+        business_id,
         delaySeconds: 0,
         content:
           `Hey ${contact_first_name}, I wanted to follow up because I saw you haven't left a review yet. We donate a meal to charity for every customer that leaves a review. If you have 10 seconds to help someone you know or don't know, you are our kind of people. Click here: https://zfmchywjmgykmlhjihls.supabase.co/functions/v1/review-link-clicked?contact_id=${contact_id}&business_id=${business_id} PS - just say 'bye' if you want me to stop texting you`,
@@ -120,6 +122,7 @@ Deno.serve(async (req) => {
       const smsSentAt = new Date().toISOString();
       await scheduleContactSMS(supabase, {
         contact_id,
+        business_id,
         delaySeconds: 0,
         content:
           `Little review reminder in case you got extra busy this week. (We give a free meal to someone in need for each new review.) Here is the link again: https://zfmchywjmgykmlhjihls.supabase.co/functions/v1/review-link-clicked?contact_id=${contact_id}&business_id=${business_id}`,
@@ -144,6 +147,7 @@ Deno.serve(async (req) => {
       const smsSentAt = new Date().toISOString();
       await scheduleContactSMS(supabase, {
         contact_id,
+        business_id,
         delaySeconds: 0,
         content:
           `Hey ${contact_first_name}, this is the last time I will request a review from you, I promise. If you have a sec to leave one, we will donate a meal to a person in need. Here's the link — and thanks for helping those in need: https://zfmchywjmgykmlhjihls.supabase.co/functions/v1/review-link-clicked?contact_id=${contact_id}&business_id=${business_id}`,

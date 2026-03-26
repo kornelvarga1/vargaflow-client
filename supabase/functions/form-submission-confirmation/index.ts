@@ -68,6 +68,7 @@ Deno.serve(async (req) => {
     // Message 1 to contact — 30 seconds
     await scheduleContactSMS(supabase, {
       contact_id: contact.id,
+      business_id,
       delaySeconds: 30,
       content:
         `Hey ${firstName}, got your quote form. I will be in touch shortly — ${settings.my_name}, ${settings.company_name}`,
@@ -76,6 +77,7 @@ Deno.serve(async (req) => {
     // Message 2 to contact — 60 seconds
     await scheduleContactSMS(supabase, {
       contact_id: contact.id,
+      business_id,
       delaySeconds: 60,
       content:
         `I will be in touch shortly. Sorry I haven't had enough coffee today. Talk soon.`,

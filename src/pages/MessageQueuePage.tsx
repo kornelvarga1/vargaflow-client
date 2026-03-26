@@ -71,15 +71,17 @@ function useConversationContacts(businessId: string | undefined) {
       if (error) throw error;
 
       // Get all contacts that have messages
-      const contactIds = [...new Set((messages || []).map((m) => m.contact_id))];
+      const contactIds = [...new Set((messages || []).map((m) => m.contact_id).filter((id): id is string => id !== null))];
       if (contactIds.length === 0) return [];
 
-      const { data: contacts } = await supabase
+      const { data: contacts, error: contactsError } = await supabase
         .from("contacts")
         .select("id, full_name, phone, pipeline, stage")
+        .eq("business_id", businessId!)
         .in("id", contactIds);
 
-      if (!contacts) return [];
+      if (contactsError) throw contactsError;
+      if (!contacts || contacts.length === 0) return [];
 
       // Build conversation list
       const contactMap = new Map(contacts.map((c) => [c.id, c]));

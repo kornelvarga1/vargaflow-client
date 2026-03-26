@@ -114,6 +114,7 @@ Deno.serve(async (req) => {
       const smsSentAt = new Date().toISOString();
       await scheduleContactSMS(supabase, {
         contact_id,
+        business_id,
         delaySeconds: 0,
         content:
           `Hey ${contact_first_name}, I am running a season special this week and giving ${discountAmount}. It's only for the first 3 people — so if you are interested or know someone who might be, just tap the link: ${website_url}/getyourdiscount ${my_name} from ${company_name}`,
@@ -146,6 +147,7 @@ Deno.serve(async (req) => {
       const smsSentAt = new Date().toISOString();
       await scheduleContactSMS(supabase, {
         contact_id,
+        business_id,
         delaySeconds: 0,
         content:
           `Hey ${contact_first_name}, I am running a customer anniversary special for the next 6 days and giving ${discountAmount}. So if you are interested or know someone who might be, just tap this link: ${website_url}/getyourdiscount ${my_name} from ${company_name}`,
@@ -185,6 +187,7 @@ Deno.serve(async (req) => {
       const smsSentAt = new Date().toISOString();
       await scheduleContactSMS(supabase, {
         contact_id,
+        business_id,
         delaySeconds: 0,
         content:
           `Hey ${contact_first_name}, I am running a loyalty special this week and giving ${discountAmount}. It's only for the first 3 people — so if you are interested or know someone who might be, just tap the link: ${website_url}/getyourdiscount ${my_name} from ${company_name}`,
@@ -217,6 +220,7 @@ Deno.serve(async (req) => {
       const smsSentAt = new Date().toISOString();
       await scheduleContactSMS(supabase, {
         contact_id,
+        business_id,
         delaySeconds: 0,
         content:
           `Hey ${contact_first_name}, I am running a special this week and giving ${discountAmount} on referrals. It's only for the first 4 people — so if you are interested or know someone who might be, just tap this link: ${website_url}/getyourdiscount ${my_name} from ${company_name}`,
@@ -249,6 +253,7 @@ Deno.serve(async (req) => {
       const smsSentAt = new Date().toISOString();
       await scheduleContactSMS(supabase, {
         contact_id,
+        business_id,
         delaySeconds: 0,
         content:
           `Hey ${contact_first_name}, I am running an anniversary special giving ${discountAmount}. It's only for the first 6 days — so if you're interested or know someone who might be, just tap this link: ${website_url}/getyourdiscount ${my_name} from ${company_name}`,
