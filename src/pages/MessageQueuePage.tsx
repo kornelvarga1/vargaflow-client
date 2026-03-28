@@ -10,7 +10,6 @@ import { useConversationOpen } from "@/context/ConversationContext";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   MessageSquare,
   Send,
@@ -261,7 +260,7 @@ export default function MessageQueuePage() {
           </div>
 
           {/* Contact List */}
-          <ScrollArea className="flex-1">
+          <div className="flex-1 overflow-y-auto">
             {contactsLoading ? (
               <div className="flex justify-center py-8">
                 <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
@@ -307,7 +306,7 @@ export default function MessageQueuePage() {
                 ))}
               </div>
             )}
-          </ScrollArea>
+          </div>
         </div>
 
         {/* Right Panel: Conversation
@@ -527,14 +526,14 @@ function ComposeBar({
 
   return (
     <div className="px-3 py-3 border-t border-border bg-card shrink-0">
-      <form onSubmit={(e) => { e.preventDefault(); handleSend(); }} className="flex items-end gap-2" autoComplete="off" data-form-type="other">
+      <div className="flex items-end gap-2">
         <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={`Message ${contactName}...`}
           inputMode="text"
-          autoComplete="off"
+          autoComplete="new-password"
           autoCorrect="off"
           autoCapitalize="off"
           spellCheck={false}
@@ -543,7 +542,7 @@ function ComposeBar({
           rows={1}
         />
         <Button
-          type="submit"
+          onClick={handleSend}
           disabled={!text.trim() || sending}
           className="shrink-0 h-12 w-12 rounded-full"
           size="icon"
@@ -554,7 +553,7 @@ function ComposeBar({
             <Send className="w-5 h-5" />
           )}
         </Button>
-      </form>
+      </div>
     </div>
   );
 }
