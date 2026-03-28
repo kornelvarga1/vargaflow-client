@@ -280,16 +280,16 @@ export default function MessageQueuePage() {
                         {c.full_name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
                       </span>
                     </div>
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1 min-w-0 overflow-hidden">
                       <div className="flex items-baseline justify-between gap-2">
-                        <p className={`text-base truncate ${c.hasUnread ? "font-bold" : "font-semibold"}`}>
+                        <p className={`text-base min-w-0 overflow-hidden text-ellipsis whitespace-nowrap ${c.hasUnread ? "font-bold" : "font-semibold"}`}>
                           {c.full_name}
                         </p>
                         <span className="text-xs text-muted-foreground shrink-0">
                           {formatDistanceToNow(new Date(c.lastMessageAt), { addSuffix: false })}
                         </span>
                       </div>
-                      <p className={`text-sm truncate mt-0.5 ${c.hasUnread ? "text-foreground font-medium" : "text-muted-foreground"}`}>
+                      <p className={`text-sm min-w-0 overflow-hidden text-ellipsis whitespace-nowrap mt-0.5 ${c.hasUnread ? "text-foreground font-medium" : "text-muted-foreground"}`}>
                         {c.lastMessage}
                       </p>
                     </div>
