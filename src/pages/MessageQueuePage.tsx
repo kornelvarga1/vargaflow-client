@@ -20,7 +20,6 @@ import {
   ArrowLeft,
   ArrowRight,
   Zap,
-  Copy,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format, formatDistanceToNow } from "date-fns";
@@ -106,7 +105,7 @@ function useConversationContacts(businessId: string | undefined) {
           phone: contact.phone,
           pipeline: contact.pipeline,
           stage: contact.stage,
-          lastMessage: latest.message_content.slice(0, 60) + (latest.message_content.length > 60 ? "…" : ""),
+          lastMessage: latest.message_content,
           lastMessageAt: latest.sent_at || latest.scheduled_at,
           hasUnread: false, // Will be true when inbound messages exist
           messageCount: msgs.length,
@@ -327,42 +326,44 @@ export default function MessageQueuePage() {
             <>
               {/* Contact Banner */}
               {selectedContact && (
-                <div className="p-3 border-b border-border bg-secondary/20 flex items-center gap-3 shrink-0">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="md:hidden shrink-0 -ml-1"
-                    onClick={() => setSelectedContactId(null)}
-                  >
-                    <ArrowLeft className="w-5 h-5" />
-                  </Button>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="font-display font-semibold text-sm">{selectedContact.full_name}</p>
-                      {selectedContact.phone && (
-                        <span className="text-xs text-muted-foreground">{selectedContact.phone}</span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <Badge variant="outline" className="text-[10px] border-primary/40 text-primary">
-                        {selectedContact.pipeline === "Onboarding" ? "Onboarding" : "Sales"}
-                      </Badge>
-                      <Badge variant="secondary" className="text-[10px]">
-                        {stageLabel(selectedContact.stage, selectedContact.pipeline)}
-                      </Badge>
-                      {activeSeq && (
-                        <Badge variant="default" className="text-[10px]">
-                          <Zap className="w-3 h-3 mr-0.5" />
-                          {(activeSeq as any).sequences?.name || "Sequence"} — Step {activeSeq.current_step}
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                  <Link to={`/contacts/${selectedContact.id}`}>
-                    <Button variant="ghost" size="sm" className="text-xs">
-                      Profile <ArrowRight className="w-3 h-3 ml-1" />
+                <div className="px-3 py-2 border-b border-border bg-secondary/20 shrink-0 space-y-1.5">
+                  {/* Row 1: back + avatar + name + profile link */}
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="md:hidden shrink-0 -ml-1 h-8 w-8"
+                      onClick={() => setSelectedContactId(null)}
+                    >
+                      <ArrowLeft className="w-5 h-5" />
                     </Button>
-                  </Link>
+                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                      <span className="text-[11px] font-display font-bold text-primary">
+                        {selectedContact.full_name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
+                      </span>
+                    </div>
+                    <p className="font-display font-semibold text-sm flex-1 truncate">{selectedContact.full_name}</p>
+                    <Link to={`/contacts/${selectedContact.id}`} className="shrink-0">
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <ArrowRight className="w-4 h-4" />
+                      </Button>
+                    </Link>
+                  </div>
+                  {/* Row 2: tags */}
+                  <div className="flex items-center gap-1.5 flex-wrap pl-1">
+                    <Badge variant="outline" className="text-[10px] border-primary/40 text-primary">
+                      {selectedContact.pipeline === "Onboarding" ? "Onboarding" : "Sales"}
+                    </Badge>
+                    <Badge variant="secondary" className="text-[10px]">
+                      {stageLabel(selectedContact.stage, selectedContact.pipeline)}
+                    </Badge>
+                    {activeSeq && (
+                      <Badge variant="default" className="text-[10px]">
+                        <Zap className="w-3 h-3 mr-0.5" />
+                        {(activeSeq as any).sequences?.name || "Sequence"} — Step {activeSeq.current_step}
+                      </Badge>
+                    )}
+                  </div>
                 </div>
               )}
 
@@ -403,6 +404,22 @@ export default function MessageQueuePage() {
   );
 }
 
+// --- URL renderer ---
+
+function renderMessageContent(text: string, linkClass: string) {
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  const parts = text.split(urlRegex);
+  return parts.map((part, i) =>
+    urlRegex.test(part) ? (
+      <a key={i} href={part} target="_blank" rel="noopener noreferrer" className={linkClass}>
+        View link
+      </a>
+    ) : (
+      part
+    )
+  );
+}
+
 // --- Message Bubble ---
 
 function MessageBubble({ message }: { message: Message }) {
@@ -413,13 +430,18 @@ function MessageBubble({ message }: { message: Message }) {
   return (
     <div className={`flex ${isOutbound ? "justify-end" : "justify-start"}`}>
       <div
-        className={`max-w-[70%] rounded-2xl px-4 py-2.5 ${
+        className={`max-w-[80%] rounded-2xl px-4 py-2.5 ${
           isOutbound
             ? "bg-primary text-primary-foreground rounded-br-md"
             : "bg-secondary text-secondary-foreground rounded-bl-md"
         } ${isCancelled ? "opacity-50 line-through" : ""}`}
       >
-        <p className="text-sm whitespace-pre-wrap">{message.message_content}</p>
+        <p className="text-sm whitespace-pre-wrap">
+          {renderMessageContent(
+            message.message_content,
+            isOutbound ? "underline underline-offset-2 opacity-80" : "underline underline-offset-2 text-primary"
+          )}
+        </p>
         <div className={`flex items-center gap-1.5 mt-1 ${
           isOutbound ? "text-primary-foreground/60" : "text-muted-foreground"
         }`}>
@@ -526,9 +548,6 @@ function ComposeBar({
           )}
         </Button>
       </div>
-      <p className="text-[10px] text-muted-foreground mt-1 flex items-center gap-1">
-        <Copy className="w-3 h-3" /> Messages are copied to clipboard for manual sending
-      </p>
     </div>
   );
 }
