@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
@@ -192,6 +192,7 @@ export default function MessageQueuePage() {
   const { data: contacts = [], isLoading: contactsLoading } = useConversationContacts(businessId);
   const { data: messages = [], isLoading: msgsLoading } = useConversation(selectedContactId, businessId);
   const { data: activeSeq } = useContactActiveSequence(selectedContactId);
+  const [optimisticMessages, setOptimisticMessages] = useState<Message[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const qc = useQueryClient();
   const { setConversationOpen } = useConversationOpen();
@@ -200,6 +201,47 @@ export default function MessageQueuePage() {
     setConversationOpen(!!selectedContactId);
     return () => setConversationOpen(false);
   }, [selectedContactId, setConversationOpen]);
+
+  // Clear optimistic messages when switching contacts
+  useEffect(() => {
+    setOptimisticMessages([]);
+  }, [selectedContactId]);
+
+  // Prune optimistic messages whose real counterpart has arrived as sent
+  useEffect(() => {
+    if (optimisticMessages.length === 0 || messages.length === 0) return;
+    setOptimisticMessages((prev) =>
+      prev.filter((opt) => {
+        const optTime = new Date(opt.scheduled_at).getTime();
+        return !messages.some(
+          (real) =>
+            real.direction === "outbound" &&
+            real.message_content === opt.message_content &&
+            Math.abs(new Date(real.scheduled_at).getTime() - optTime) < 5000
+        );
+      })
+    );
+  }, [messages]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Merge real + optimistic messages, sorted chronologically
+  const allMessages = useMemo(() => {
+    const dedupedOptimistic = optimisticMessages.filter(
+      (opt) =>
+        !messages.some(
+          (real) =>
+            real.direction === "outbound" &&
+            real.message_content === opt.message_content &&
+            Math.abs(
+              new Date(real.scheduled_at).getTime() - new Date(opt.scheduled_at).getTime()
+            ) < 5000
+        )
+    );
+    return [...messages, ...dedupedOptimistic].sort((a, b) => {
+      const tA = new Date(a.sent_at ?? a.scheduled_at).getTime();
+      const tB = new Date(b.sent_at ?? b.scheduled_at).getTime();
+      return tA - tB;
+    });
+  }, [messages, optimisticMessages]);
 
   const selectedContact = contacts.find((c) => c.id === selectedContactId);
 
@@ -213,7 +255,7 @@ export default function MessageQueuePage() {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages]);
+  }, [allMessages]);
 
   // Auto-select first contact on desktop only
   useEffect(() => {
@@ -383,13 +425,13 @@ export default function MessageQueuePage() {
                   <div className="flex justify-center py-12">
                     <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
                   </div>
-                ) : messages.length === 0 ? (
+                ) : allMessages.length === 0 ? (
                   <div className="flex items-center justify-center h-full text-base text-muted-foreground">
                     No messages yet.
                   </div>
                 ) : (
                   <>
-                    {messages.map((msg) => (
+                    {allMessages.map((msg) => (
                       <MessageBubble key={msg.id} message={msg} />
                     ))}
                   </>
@@ -401,10 +443,17 @@ export default function MessageQueuePage() {
                 contactId={selectedContactId}
                 contactName={selectedContact?.full_name || ""}
                 contactPhone={selectedContact?.phone || null}
+                businessId={businessId}
                 onSent={() => {
                   qc.invalidateQueries({ queryKey: ["conversation", selectedContactId] });
                   qc.invalidateQueries({ queryKey: ["conversation_contacts"] });
                 }}
+                onOptimisticMessage={(msg) => setOptimisticMessages((prev) => [...prev, msg])}
+                onOptimisticRollback={(scheduledAt) =>
+                  setOptimisticMessages((prev) =>
+                    prev.filter((m) => m.scheduled_at !== scheduledAt)
+                  )
+                }
               />
             </>
           )}
@@ -444,7 +493,7 @@ function MessageBubble({ message }: { message: Message }) {
           isOutbound
             ? "bg-primary text-primary-foreground rounded-br-lg"
             : "bg-secondary text-secondary-foreground rounded-bl-lg"
-        } ${isCancelled ? "opacity-50 line-through" : ""}`}
+        } ${isCancelled ? "opacity-50 line-through" : ""} ${isPending && isOutbound ? "opacity-60" : ""}`}
       >
         <p className="text-base leading-relaxed whitespace-pre-wrap">
           {renderMessageContent(
@@ -478,12 +527,18 @@ function ComposeBar({
   contactId,
   contactName,
   contactPhone,
+  businessId,
   onSent,
+  onOptimisticMessage,
+  onOptimisticRollback,
 }: {
   contactId: string;
   contactName: string;
   contactPhone: string | null;
+  businessId: string | undefined;
   onSent: () => void;
+  onOptimisticMessage: (msg: Message) => void;
+  onOptimisticRollback: (scheduledAt: string) => void;
 }) {
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
@@ -491,34 +546,53 @@ function ComposeBar({
   const handleSend = async () => {
     if (!text.trim()) return;
     setSending(true);
-    try {
-      const { data: contactData } = await supabase
-        .from("contacts")
-        .select("business_id")
-        .eq("id", contactId)
-        .single();
 
+    const content = text.trim();
+    const scheduledAt = new Date().toISOString();
+
+    // Show message immediately in the thread (optimistic)
+    onOptimisticMessage({
+      id: `optimistic-${scheduledAt}`,
+      message_content: content,
+      message_type: "sms",
+      status: "pending",
+      scheduled_at: scheduledAt,
+      sent_at: null,
+      created_at: scheduledAt,
+      direction: "outbound",
+    });
+    setText("");
+
+    try {
       const { error } = await supabase.from("message_queue").insert({
         contact_id: contactId,
-        message_content: text.trim(),
+        message_content: content,
         message_type: "sms",
-        scheduled_at: new Date().toISOString(),
+        scheduled_at: scheduledAt,
         status: "pending",
         to_phone: contactPhone || null,
-        business_id: contactData?.business_id || null,
+        business_id: businessId || null,
         metadata: { to: contactPhone || null },
       });
-      if (error) throw error;
+      if (error) {
+        console.error("[ComposeBar] insert error:", error.code, error.message, error.details, error.hint);
+        onOptimisticRollback(scheduledAt);
+        setText(content);
+        throw error;
+      }
 
-      await navigator.clipboard.writeText(text.trim());
-      await logActivity("message_queued", `Manual SMS queued: "${text.trim().slice(0, 60)}…"`, contactId);
+      navigator.clipboard.writeText(content).catch((clipErr) =>
+        console.warn("[ComposeBar] clipboard write failed:", clipErr)
+      );
+      logActivity("message_queued", `Manual SMS queued: "${content.slice(0, 60)}…"`, contactId).catch(() => {});
       toast.success("Message queued & copied to clipboard", {
         description: contactPhone ? `Send to ${contactPhone}` : "No phone number on file",
       });
-      setText("");
       onSent();
-    } catch {
-      toast.error("Failed to queue message");
+    } catch (err) {
+      console.error("[ComposeBar] send failed:", err);
+      const msg = err instanceof Error ? err.message : JSON.stringify(err);
+      toast.error("Failed to queue message", { description: msg });
     } finally {
       setSending(false);
     }
