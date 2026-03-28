@@ -149,7 +149,7 @@ function useConversation(contactId: string | null, businessId: string | undefine
         scheduled_at: msg.scheduled_at,
         sent_at: msg.sent_at,
         created_at: msg.created_at,
-        direction: "outbound" as const,
+        direction: (msg.direction ?? "outbound") as "outbound" | "inbound",
       })) as Message[];
     },
     refetchInterval: 10000,

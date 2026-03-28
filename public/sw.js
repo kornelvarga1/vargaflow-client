@@ -1,9 +1,14 @@
 self.addEventListener('push', (event) => {
+  console.log('[sw] push event received, hasData:', !!event.data);
+
   let data = {};
   try {
     data = event.data ? event.data.json() : {};
-  } catch {
-    data = { title: 'New message', body: event.data ? event.data.text() : '' };
+    console.log('[sw] push data (json):', JSON.stringify(data));
+  } catch (e) {
+    const raw = event.data ? event.data.text() : '';
+    console.log('[sw] push data not JSON, raw:', raw, 'error:', e.message);
+    data = { title: 'New message', body: raw };
   }
 
   const title = data.title || 'Client Portal';
@@ -16,7 +21,12 @@ self.addEventListener('push', (event) => {
     data: { url: data.url || '/messages' },
   };
 
-  event.waitUntil(self.registration.showNotification(title, options));
+  console.log('[sw] calling showNotification, title:', title, 'body:', options.body);
+  event.waitUntil(
+    self.registration.showNotification(title, options)
+      .then(() => console.log('[sw] showNotification resolved'))
+      .catch((err) => console.error('[sw] showNotification failed:', err))
+  );
 });
 
 self.addEventListener('notificationclick', (event) => {
