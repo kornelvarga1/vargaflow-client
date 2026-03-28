@@ -1,19 +1,28 @@
 import { useState, useEffect } from "react";
 import { useCustomValues, useUpdateCustomValue, type CustomValue } from "@/hooks/useCustomValues";
+import { useBusinessId } from "@/hooks/useBusinessId";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Settings, Check, Loader2 } from "lucide-react";
+import { Settings, Check, Loader2, Bell, BellOff } from "lucide-react";
 import { toast } from "sonner";
+import { requestNotificationPermission, getNotificationPermissionState } from "@/hooks/usePushNotifications";
 
 
 export default function SettingsPage() {
   const { data: customValues, isLoading } = useCustomValues();
   const updateMutation = useUpdateCustomValue();
+  const { data: businessId } = useBusinessId();
   const [localValues, setLocalValues] = useState<Record<string, string>>({});
   const [dirtyKeys, setDirtyKeys] = useState<Set<string>>(new Set());
+  const [notifPermission, setNotifPermission] = useState<NotificationPermission | "unsupported">("default");
+  const [notifLoading, setNotifLoading] = useState(false);
+
+  useEffect(() => {
+    getNotificationPermissionState().then(setNotifPermission);
+  }, []);
 
   useEffect(() => {
     if (customValues) {
@@ -87,6 +96,58 @@ export default function SettingsPage() {
           Save All
         </Button>
       </div>
+
+      {/* Push Notifications */}
+      <Card className="bg-card border-border shadow-card">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-base font-display">
+            <Bell className="w-4 h-4 text-accent-foreground" />
+            Push Notifications
+          </CardTitle>
+        </CardHeader>
+        <Separator />
+        <CardContent className="pt-4">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-medium">Inbound message alerts</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {notifPermission === "granted"
+                  ? "Notifications are enabled on this device."
+                  : notifPermission === "denied"
+                  ? "Blocked in browser settings — reset site permissions to re-enable."
+                  : notifPermission === "unsupported"
+                  ? "Not supported in this browser."
+                  : "Get notified instantly when a lead replies."}
+              </p>
+            </div>
+            {notifPermission !== "unsupported" && notifPermission !== "denied" && (
+              <Button
+                size="sm"
+                variant={notifPermission === "granted" ? "outline" : "default"}
+                disabled={notifLoading || notifPermission === "granted"}
+                onClick={async () => {
+                  if (!businessId) { toast.error("Business ID not loaded yet"); return; }
+                  setNotifLoading(true);
+                  const ok = await requestNotificationPermission(businessId);
+                  setNotifPermission(ok ? "granted" : Notification.permission);
+                  if (ok) toast.success("Push notifications enabled");
+                  else toast.error("Could not enable notifications");
+                  setNotifLoading(false);
+                }}
+                className="shrink-0"
+              >
+                {notifLoading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : notifPermission === "granted" ? (
+                  <><Bell className="w-4 h-4 mr-1.5" />Enabled</>
+                ) : (
+                  <><Bell className="w-4 h-4 mr-1.5" />Enable</>
+                )}
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       <Card className="bg-card border-border shadow-card">
         <CardHeader className="pb-3">
