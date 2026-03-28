@@ -273,11 +273,11 @@ export default function MessageQueuePage() {
                   : "No conversations match your filter."}
               </div>
             ) : (
-              <div>
+              <div className="pb-4">
                 {filteredContacts.map((c) => (
                   <button
                     key={c.id}
-                    className={`w-full text-left px-4 py-4 flex items-center gap-3 hover:bg-secondary/50 active:bg-secondary transition-colors border-b border-border/50 ${
+                    className={`w-full text-left px-4 py-4 flex items-center gap-3 overflow-x-hidden hover:bg-secondary/50 active:bg-secondary transition-colors border-b border-border/50 ${
                       selectedContactId === c.id ? "bg-secondary" : ""
                     }`}
                     onClick={() => setSelectedContactId(c.id)}
@@ -287,7 +287,7 @@ export default function MessageQueuePage() {
                         {c.full_name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
                       </span>
                     </div>
-                    <div className="flex-1 min-w-0 overflow-hidden">
+                    <div className="flex-1 min-w-0 overflow-hidden max-w-full">
                       <div className="flex items-baseline justify-between gap-2">
                         <p className={`text-base min-w-0 overflow-hidden text-ellipsis whitespace-nowrap ${c.hasUnread ? "font-bold" : "font-semibold"}`}>
                           {c.full_name}
@@ -527,7 +527,7 @@ function ComposeBar({
 
   return (
     <div className="px-3 py-3 border-t border-border bg-card shrink-0">
-      <div className="flex items-end gap-2">
+      <form onSubmit={(e) => { e.preventDefault(); handleSend(); }} className="flex items-end gap-2" autoComplete="off" data-form-type="other">
         <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
@@ -536,12 +536,14 @@ function ComposeBar({
           inputMode="text"
           autoComplete="off"
           autoCorrect="off"
-          autoCapitalize="sentences"
+          autoCapitalize="off"
+          spellCheck={false}
+          data-form-type="other"
           className="flex-1 resize-none rounded-2xl border border-input bg-background px-4 py-3 text-base placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring min-h-[48px] max-h-[140px]"
           rows={1}
         />
         <Button
-          onClick={handleSend}
+          type="submit"
           disabled={!text.trim() || sending}
           className="shrink-0 h-12 w-12 rounded-full"
           size="icon"
@@ -552,7 +554,7 @@ function ComposeBar({
             <Send className="w-5 h-5" />
           )}
         </Button>
-      </div>
+      </form>
     </div>
   );
 }
