@@ -17,7 +17,7 @@ import {
   Send,
   Loader2,
   Search,
-  User,
+  ArrowLeft,
   ArrowRight,
   Zap,
   Copy,
@@ -214,9 +214,9 @@ export default function MessageQueuePage() {
     }
   }, [messages]);
 
-  // Auto-select first contact
+  // Auto-select first contact on desktop only
   useEffect(() => {
-    if (!selectedContactId && contacts.length > 0) {
+    if (!selectedContactId && contacts.length > 0 && window.innerWidth >= 768) {
       setSelectedContactId(contacts[0].id);
     }
   }, [contacts, selectedContactId]);
@@ -236,8 +236,8 @@ export default function MessageQueuePage() {
       </div>
 
       <div className="flex flex-1 min-h-0">
-        {/* Left Panel: Contact List */}
-        <div className="w-80 lg:w-96 border-r border-border flex flex-col shrink-0">
+        {/* Left Panel: Contact List — full width on mobile, fixed sidebar on md+ */}
+        <div className={`flex-col border-border shrink-0 w-full md:w-80 lg:w-96 md:border-r ${selectedContactId ? "hidden md:flex" : "flex"}`}>
           {/* Search + Filter */}
           <div className="p-3 space-y-2 border-b border-border">
             <div className="relative">
@@ -314,8 +314,8 @@ export default function MessageQueuePage() {
           </ScrollArea>
         </div>
 
-        {/* Right Panel: Conversation */}
-        <div className="flex-1 flex flex-col min-w-0">
+        {/* Right Panel: Conversation — full width on mobile, flex-1 on md+ */}
+        <div className={`flex-col min-w-0 w-full md:flex-1 ${selectedContactId ? "flex" : "hidden md:flex"}`}>
           {!selectedContactId ? (
             <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm">
               <div className="text-center">
@@ -328,6 +328,14 @@ export default function MessageQueuePage() {
               {/* Contact Banner */}
               {selectedContact && (
                 <div className="p-3 border-b border-border bg-secondary/20 flex items-center gap-3 shrink-0">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="md:hidden shrink-0 -ml-1"
+                    onClick={() => setSelectedContactId(null)}
+                  >
+                    <ArrowLeft className="w-5 h-5" />
+                  </Button>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <p className="font-display font-semibold text-sm">{selectedContact.full_name}</p>
