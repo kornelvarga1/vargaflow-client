@@ -127,7 +127,6 @@ function useConversation(contactId: string | null, businessId: string | undefine
         .eq("contact_id", contactId!)
         .eq("business_id", businessId!)
         .in("status", ["sent", "received"])
-        .order("sent_at", { ascending: true, nullsFirst: false })
         .order("scheduled_at", { ascending: true });
 
       if (error) throw error;
@@ -140,19 +139,25 @@ function useConversation(contactId: string | null, businessId: string | undefine
 
       const contactName = contact?.full_name || "Unknown";
 
-      return (data || []).map((msg) => ({
-        id: msg.id,
-        message_content: replaceCustomValues(
-          msg.message_content.replace(/\{\{contact_name\}\}/g, contactName),
-          customValues
-        ),
-        message_type: msg.message_type,
-        status: msg.status,
-        scheduled_at: msg.scheduled_at,
-        sent_at: msg.sent_at,
-        created_at: msg.created_at,
-        direction: (msg.direction ?? "outbound") as "outbound" | "inbound",
-      })) as Message[];
+      return (data || [])
+        .map((msg) => ({
+          id: msg.id,
+          message_content: replaceCustomValues(
+            msg.message_content.replace(/\{\{contact_name\}\}/g, contactName),
+            customValues
+          ),
+          message_type: msg.message_type,
+          status: msg.status,
+          scheduled_at: msg.scheduled_at,
+          sent_at: msg.sent_at,
+          created_at: msg.created_at,
+          direction: (msg.direction ?? "outbound") as "outbound" | "inbound",
+        }))
+        .sort((a, b) => {
+          const tA = new Date(a.sent_at ?? a.scheduled_at).getTime();
+          const tB = new Date(b.sent_at ?? b.scheduled_at).getTime();
+          return tA - tB;
+        }) as Message[];
     },
     refetchInterval: 10000,
   });
