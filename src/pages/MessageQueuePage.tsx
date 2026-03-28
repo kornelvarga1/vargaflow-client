@@ -581,13 +581,7 @@ function ComposeBar({
         throw error;
       }
 
-      navigator.clipboard.writeText(content).catch((clipErr) =>
-        console.warn("[ComposeBar] clipboard write failed:", clipErr)
-      );
       logActivity("message_queued", `Manual SMS queued: "${content.slice(0, 60)}…"`, contactId).catch(() => {});
-      toast.success("Message queued & copied to clipboard", {
-        description: contactPhone ? `Send to ${contactPhone}` : "No phone number on file",
-      });
       onSent();
     } catch (err) {
       console.error("[ComposeBar] send failed:", err);
