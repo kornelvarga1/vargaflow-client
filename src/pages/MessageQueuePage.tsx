@@ -126,6 +126,8 @@ function useConversation(contactId: string | null, businessId: string | undefine
         .select("*")
         .eq("contact_id", contactId!)
         .eq("business_id", businessId!)
+        .in("status", ["sent", "received"])
+        .order("sent_at", { ascending: true, nullsFirst: false })
         .order("scheduled_at", { ascending: true });
 
       if (error) throw error;
