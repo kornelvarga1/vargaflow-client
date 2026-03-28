@@ -3,6 +3,7 @@ import { NavLink, useLocation } from "react-router-dom";
 import { LayoutDashboard, Users, Settings, MessageSquare, Menu, X, Zap, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
+import { useConversationOpen } from "@/context/ConversationContext";
 
 const navItems = [
   { to: "/", icon: LayoutDashboard, label: "Dashboard" },
@@ -17,6 +18,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { signOut } = useAuth();
+  const { isConversationOpen } = useConversationOpen();
 
   return (
     <div className="flex h-screen overflow-hidden">
@@ -97,8 +99,8 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         </div>
       )}
 
-      {/* Mobile bottom nav */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 flex border-t border-border glass safe-bottom">
+      {/* Mobile bottom nav — hidden when a conversation is open */}
+      <nav className={`md:hidden fixed bottom-0 left-0 right-0 z-40 flex border-t border-border glass safe-bottom ${isConversationOpen ? "hidden" : ""}`}>
         {mobileNavItems.map((item) => {
           const isActive =
             item.to === "/"
@@ -131,7 +133,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       </nav>
 
       {/* Main content */}
-      <main className="flex-1 overflow-auto pb-20 md:pb-0">{children}</main>
+      <main className={`flex-1 overflow-auto md:pb-0 ${isConversationOpen ? "pb-0" : "pb-20"}`}>{children}</main>
     </div>
   );
 }

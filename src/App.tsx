@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/hooks/useAuth";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import { ConversationProvider } from "@/context/ConversationContext";
 import AppLayout from "@/components/layout/AppLayout";
 import Index from "./pages/Index";
 import SettingsPage from "./pages/SettingsPage";
@@ -29,6 +30,7 @@ const App = () => (
               path="/*"
               element={
                 <ProtectedRoute>
+                  <ConversationProvider>
                   <AppLayout>
                     <Routes>
                       <Route path="/" element={<Index />} />
@@ -39,6 +41,7 @@ const App = () => (
                       <Route path="*" element={<NotFound />} />
                     </Routes>
                   </AppLayout>
+                  </ConversationProvider>
                 </ProtectedRoute>
               }
             />

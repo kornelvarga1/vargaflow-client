@@ -6,6 +6,7 @@ import { useBusinessId } from "@/hooks/useBusinessId";
 import { useCustomValues, replaceCustomValues } from "@/hooks/useCustomValues";
 import { logActivity } from "@/hooks/useActivityLog";
 import { SALES_STAGES, ONBOARDING_STAGES } from "@/hooks/useContacts";
+import { useConversationOpen } from "@/context/ConversationContext";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -187,6 +188,12 @@ export default function MessageQueuePage() {
   const { data: activeSeq } = useContactActiveSequence(selectedContactId);
   const scrollRef = useRef<HTMLDivElement>(null);
   const qc = useQueryClient();
+  const { setConversationOpen } = useConversationOpen();
+
+  useEffect(() => {
+    setConversationOpen(!!selectedContactId);
+    return () => setConversationOpen(false);
+  }, [selectedContactId, setConversationOpen]);
 
   const selectedContact = contacts.find((c) => c.id === selectedContactId);
 
@@ -303,8 +310,15 @@ export default function MessageQueuePage() {
           </ScrollArea>
         </div>
 
-        {/* Right Panel: Conversation */}
-        <div className={`flex-col min-w-0 w-full md:flex-1 ${selectedContactId ? "flex" : "hidden md:flex"}`}>
+        {/* Right Panel: Conversation
+            Mobile open:   fixed inset-0 z-30 — takes full screen, bottom tracks above keyboard
+            Mobile closed: hidden
+            Desktop:       static flex-1 (normal flow, always visible) */}
+        <div className={
+          selectedContactId
+            ? "fixed inset-0 z-30 flex flex-col bg-background md:static md:inset-auto md:z-auto md:flex-1 md:min-w-0"
+            : "hidden md:flex md:flex-col md:flex-1 md:min-w-0"
+        }>
           {!selectedContactId ? (
             <div className="flex-1 flex items-center justify-center text-muted-foreground text-base">
               <div className="text-center">
@@ -519,6 +533,10 @@ function ComposeBar({
           onChange={(e) => setText(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={`Message ${contactName}...`}
+          inputMode="text"
+          autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="sentences"
           className="flex-1 resize-none rounded-2xl border border-input bg-background px-4 py-3 text-base placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring min-h-[48px] max-h-[140px]"
           rows={1}
         />
