@@ -4,7 +4,6 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { useBusinessId } from "@/hooks/useBusinessId";
 import { useCustomValues, replaceCustomValues } from "@/hooks/useCustomValues";
-import { logActivity } from "@/hooks/useActivityLog";
 import { SALES_STAGES, ONBOARDING_STAGES } from "@/hooks/useContacts";
 import { useConversationOpen } from "@/context/ConversationContext";
 import { Badge } from "@/components/ui/badge";
@@ -564,24 +563,23 @@ function ComposeBar({
     setText("");
 
     try {
-      const { error } = await supabase.from("message_queue").insert({
-        contact_id: contactId,
-        message_content: content,
-        message_type: "sms",
-        scheduled_at: scheduledAt,
-        status: "pending",
-        to_phone: contactPhone || null,
-        business_id: businessId || null,
-        metadata: { to: contactPhone || null },
+      const { data, error } = await supabase.functions.invoke("send-manual-sms", {
+        body: {
+          contact_id: contactId,
+          business_id: businessId,
+          message: content,
+          to_phone: contactPhone,
+        },
       });
-      if (error) {
-        console.error("[ComposeBar] insert error:", error.code, error.message, error.details, error.hint);
+
+      if (error || data?.error) {
+        const msg = data?.error ?? error?.message ?? "Unknown error";
+        console.error("[ComposeBar] send-manual-sms error:", msg);
         onOptimisticRollback(scheduledAt);
         setText(content);
-        throw error;
+        throw new Error(msg);
       }
 
-      logActivity("message_queued", `Manual SMS queued: "${content.slice(0, 60)}…"`, contactId).catch(() => {});
       onSent();
     } catch (err) {
       console.error("[ComposeBar] send failed:", err);
