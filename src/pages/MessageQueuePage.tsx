@@ -17,6 +17,7 @@ import {
   ArrowLeft,
   ArrowRight,
   Zap,
+  Phone,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format, formatDistanceToNow } from "date-fns";
@@ -330,9 +331,14 @@ export default function MessageQueuePage() {
                     onClick={() => setSelectedContactId(c.id)}
                   >
                     <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                      <span className="text-sm font-display font-bold text-primary">
-                        {c.full_name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
-                      </span>
+                      {(() => {
+                        const initials = c.full_name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
+                        return initials === "" || initials.startsWith("+") ? (
+                          <Phone className="w-5 h-5 text-primary" />
+                        ) : (
+                          <span className="text-sm font-display font-bold text-primary">{initials}</span>
+                        );
+                      })()}
                     </div>
                     <div className="flex-1 min-w-0 overflow-hidden max-w-full">
                       <div className="flex items-baseline justify-between gap-2">
@@ -363,7 +369,7 @@ export default function MessageQueuePage() {
             Desktop:       static flex-1 (normal flow, always visible) */}
         <div className={
           selectedContactId
-            ? "fixed inset-0 z-30 flex flex-col bg-background md:static md:inset-auto md:z-auto md:flex-1 md:min-w-0"
+            ? "fixed inset-x-0 top-0 h-dvh z-30 flex flex-col bg-background md:static md:inset-auto md:h-auto md:z-auto md:flex-1 md:min-w-0"
             : "hidden md:flex md:flex-col md:flex-1 md:min-w-0"
         }>
           {!selectedContactId ? (
@@ -598,7 +604,7 @@ function ComposeBar({
   };
 
   return (
-    <div className="px-3 py-3 border-t border-border bg-card shrink-0">
+    <div className="px-3 pt-3 border-t border-border bg-card shrink-0" style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom, 0px))' }}>
       <div className="flex items-end gap-2">
         <textarea
           value={text}
