@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
@@ -194,7 +194,6 @@ export default function MessageQueuePage() {
   const { data: activeSeq } = useContactActiveSequence(selectedContactId);
   const [optimisticMessages, setOptimisticMessages] = useState<Message[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const conversationPanelRef = useRef<HTMLDivElement>(null);
   const qc = useQueryClient();
   const { setConversationOpen } = useConversationOpen();
 
@@ -202,24 +201,6 @@ export default function MessageQueuePage() {
     setConversationOpen(!!selectedContactId);
     return () => setConversationOpen(false);
   }, [selectedContactId, setConversationOpen]);
-
-  // iOS keyboard fix: track visual viewport height and apply it directly to the
-  // conversation panel so the flex column stays locked (header top, compose bottom).
-  useEffect(() => {
-    const panel = conversationPanelRef.current;
-    if (!panel || !selectedContactId || window.innerWidth >= 768) return;
-
-    const update = () => {
-      const vvh = window.visualViewport?.height ?? window.innerHeight;
-      panel.style.height = vvh + 'px';
-    };
-    update();
-    window.visualViewport?.addEventListener('resize', update);
-    return () => {
-      panel.style.height = '';
-      window.visualViewport?.removeEventListener('resize', update);
-    };
-  }, [selectedContactId]);
 
   // Clear optimistic messages when switching contacts
   useEffect(() => {
@@ -287,11 +268,9 @@ export default function MessageQueuePage() {
     ALL_STAGES.find((s) => s.key === key && s.pipeline === pipeline)?.label || key;
 
   return (
-    <div className="h-[calc(100vh-4rem)] flex flex-col animate-fade-in">
-
-      <div className="flex flex-1 min-h-0">
-        {/* Left Panel: Contact List */}
-        <div className={`flex-col border-border shrink-0 w-full md:w-80 lg:w-96 md:border-r ${selectedContactId ? "hidden md:flex" : "flex"}`}>
+    <div className="h-dvh flex overflow-hidden animate-fade-in">
+      {/* Left Panel: Contact List */}
+      <div className={`flex flex-col border-border shrink-0 w-full md:w-80 lg:w-96 md:border-r ${selectedContactId ? "hidden md:flex" : "flex"}`}>
 
           {/* List header — visible on mobile only */}
           <div className="px-4 py-3 border-b border-border shrink-0 md:hidden">
@@ -383,17 +362,14 @@ export default function MessageQueuePage() {
         </div>
 
         {/* Right Panel: Conversation
-            Mobile open:   fixed inset-0 z-30 — takes full screen, bottom tracks above keyboard
+            Mobile open:   flex-1 flex-col, fills h-dvh outer container
             Mobile closed: hidden
-            Desktop:       static flex-1 (normal flow, always visible) */}
-        <div
-          ref={conversationPanelRef}
-          className={
-            selectedContactId
-              ? "fixed inset-x-0 top-0 h-dvh z-30 flex flex-col overflow-hidden bg-background md:static md:inset-auto md:h-auto md:overflow-auto md:z-auto md:flex-1 md:min-w-0"
-              : "hidden md:flex md:flex-col md:flex-1 md:min-w-0"
-          }
-        >
+            Desktop:       flex-1, sits beside the left panel */}
+      <div className={
+        selectedContactId
+          ? "flex flex-col flex-1 min-w-0 overflow-hidden bg-background"
+          : "hidden md:flex md:flex-col md:flex-1 md:min-w-0"
+      }>
           {!selectedContactId ? (
             <div className="flex-1 flex items-center justify-center text-muted-foreground text-base">
               <div className="text-center">
@@ -405,7 +381,7 @@ export default function MessageQueuePage() {
             <>
               {/* Conversation Header */}
               {selectedContact && (
-                <div className="px-3 py-2.5 border-b border-border bg-secondary/20 shrink-0 space-y-1.5">
+                <div className="flex-none px-3 py-2.5 border-b border-border bg-secondary/20 space-y-1.5">
                   {/* Row 1: back + avatar + name + profile link */}
                   <div className="flex items-center gap-2">
                     <Button
@@ -471,25 +447,26 @@ export default function MessageQueuePage() {
               </div>
 
               {/* Compose */}
-              <ComposeBar
-                contactId={selectedContactId}
-                contactName={selectedContact?.full_name || ""}
-                contactPhone={selectedContact?.phone || null}
-                businessId={businessId}
-                onSent={() => {
-                  qc.invalidateQueries({ queryKey: ["conversation", selectedContactId] });
-                  qc.invalidateQueries({ queryKey: ["conversation_contacts"] });
-                }}
-                onOptimisticMessage={(msg) => setOptimisticMessages((prev) => [...prev, msg])}
-                onOptimisticRollback={(scheduledAt) =>
-                  setOptimisticMessages((prev) =>
-                    prev.filter((m) => m.scheduled_at !== scheduledAt)
-                  )
-                }
-              />
+              <div className="flex-none" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
+                <ComposeBar
+                  contactId={selectedContactId}
+                  contactName={selectedContact?.full_name || ""}
+                  contactPhone={selectedContact?.phone || null}
+                  businessId={businessId}
+                  onSent={() => {
+                    qc.invalidateQueries({ queryKey: ["conversation", selectedContactId] });
+                    qc.invalidateQueries({ queryKey: ["conversation_contacts"] });
+                  }}
+                  onOptimisticMessage={(msg) => setOptimisticMessages((prev) => [...prev, msg])}
+                  onOptimisticRollback={(scheduledAt) =>
+                    setOptimisticMessages((prev) =>
+                      prev.filter((m) => m.scheduled_at !== scheduledAt)
+                    )
+                  }
+                />
+              </div>
             </>
           )}
-        </div>
       </div>
     </div>
   );
@@ -631,7 +608,7 @@ function ComposeBar({
   };
 
   return (
-    <div className="px-3 pt-3 border-t border-border bg-card shrink-0" style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom, 0px))' }}>
+    <div className="px-3 py-3 border-t border-border bg-card shrink-0">
       <div className="flex items-end gap-2">
         <textarea
           value={text}
