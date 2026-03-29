@@ -370,7 +370,7 @@ export default function MessageQueuePage() {
             Desktop:       flex-1, sits beside the left panel */}
       <div className={
         selectedContactId
-          ? "flex flex-col h-dvh min-w-0 overflow-hidden bg-background md:flex-1 md:h-auto"
+          ? "fixed inset-x-0 top-0 h-dvh flex flex-col overflow-hidden bg-background z-20 md:static md:flex-1 md:h-auto md:inset-auto md:z-auto"
           : "hidden md:flex md:flex-col md:flex-1 md:min-w-0"
       }>
           {!selectedContactId ? (
