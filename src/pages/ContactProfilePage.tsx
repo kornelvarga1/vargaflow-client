@@ -183,9 +183,14 @@ export default function ContactProfilePage() {
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-            <span className="text-sm font-display font-bold text-primary">
-              {contact.full_name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
-            </span>
+            {(() => {
+              const initials = contact.full_name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
+              return initials === "" || initials.startsWith("+") ? (
+                <Phone className="w-4 h-4 text-primary" />
+              ) : (
+                <span className="text-sm font-display font-bold text-primary">{initials}</span>
+              );
+            })()}
           </div>
           <h1 className="text-xl font-display font-bold truncate flex-1">{contact.full_name}</h1>
           <Button variant="outline" size="icon" className="shrink-0" onClick={() => setSmsDialogOpen(true)}>
