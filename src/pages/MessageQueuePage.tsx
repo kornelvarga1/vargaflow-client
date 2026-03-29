@@ -384,7 +384,7 @@ export default function MessageQueuePage() {
             <>
               {/* Conversation Header */}
               {selectedContact && (
-                <div className="flex-none px-3 py-2.5 border-b border-border bg-secondary/20 space-y-1.5">
+                <div className="sticky top-0 z-10 px-3 py-2.5 border-b border-border bg-secondary/20 space-y-1.5">
                   {/* Row 1: back + avatar + name + profile link */}
                   <div className="flex items-center gap-2">
                     <Button
@@ -434,7 +434,7 @@ export default function MessageQueuePage() {
               )}
 
               {/* Messages */}
-              <div ref={scrollRef} className="flex-1 overflow-y-auto px-3 py-4 space-y-2">
+              <div ref={scrollRef} className="flex-1 overflow-y-auto overscroll-contain px-3 py-4 space-y-2">
                 {msgsLoading ? (
                   <div className="flex justify-center py-12">
                     <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
