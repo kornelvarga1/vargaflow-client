@@ -52,7 +52,7 @@ export default function LoginPage() {
             <Zap className="w-6 h-6 text-primary" />
           </div>
           <div className="text-center">
-            <h1 className="text-2xl font-display font-bold text-primary">Client Portal</h1>
+            <h1 className="text-2xl font-display font-bold text-primary">VargaFlow</h1>
             <p className="text-sm text-muted-foreground mt-1">Sign in to your account</p>
           </div>
         </div>

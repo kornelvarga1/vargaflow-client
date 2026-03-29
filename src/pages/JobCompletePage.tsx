@@ -4,7 +4,6 @@ import { supabase } from "@/lib/supabase";
 
 interface Settings {
   company_name: string;
-  brand_color: string;
 }
 
 type FormState = "idle" | "submitting" | "success" | "error";
@@ -37,17 +36,14 @@ export default function JobCompletePage() {
 
     supabase
       .from("settings")
-      .select("company_name, brand_color")
+      .select("company_name")
       .eq("business_id", business_id)
       .single()
       .then(({ data, error }) => {
         if (error || !data) {
           setLoadError("Could not load business settings.");
         } else {
-          setSettings({
-            company_name: data.company_name,
-            brand_color: data.brand_color || "#16a34a",
-          });
+          setSettings({ company_name: data.company_name });
         }
       });
   }, [business_id]);
@@ -102,13 +98,11 @@ export default function JobCompletePage() {
     }
   }
 
-  const brand = settings?.brand_color ?? "#16a34a";
-
   // ── Loading ───────────────────────────────────────────────────
   if (!settings && !loadError) {
     return (
       <div style={styles.page}>
-        <div style={{ color: "#64748b", fontSize: 15 }}>Loading…</div>
+        <div style={{ color: "#8e8e93", fontSize: 15 }}>Loading…</div>
       </div>
     );
   }
@@ -124,21 +118,12 @@ export default function JobCompletePage() {
 
   return (
     <div style={styles.page}>
-      {/* VF Badge */}
-      <div style={{ ...styles.vfBadge, background: brand }}>VF</div>
-
       {/* Card */}
-      <div
-        style={{
-          ...styles.card,
-          border: `1px solid ${brand}`,
-          boxShadow: `0 0 36px ${brand}38`,
-        }}
-      >
+      <div style={styles.card}>
         <h1 style={styles.heading}>{settings!.company_name}</h1>
 
         {/* Info box */}
-        <div style={{ ...styles.infoBox, borderLeftColor: brand }}>
+        <div style={styles.infoBox}>
           <p style={styles.infoStep}>
             1. ⭐ This will send out your 5 star review request funnel (gate keeping negative reviews)
           </p>
@@ -154,7 +139,7 @@ export default function JobCompletePage() {
             — Customer will be texted every 2–3 months reminding them of your return customer
             discount + requesting referrals for the same discount
           </p>
-          <p style={{ ...styles.infoBody, color: "#f1f5f9", fontWeight: 600, marginTop: 8 }}>
+          <p style={{ ...styles.infoBody, color: "#ffffff", fontWeight: 600, marginTop: 8 }}>
             Fill in the information below 👇👇👇
           </p>
         </div>
@@ -180,7 +165,7 @@ export default function JobCompletePage() {
                 placeholder="Customers First name (For example: John)"
                 style={{
                   ...styles.input,
-                  borderColor: firstNameError ? "#f87171" : "#2a2a2a",
+                  borderColor: firstNameError ? "#f87171" : "#3a3a3c",
                 }}
                 required
               />
@@ -201,7 +186,7 @@ export default function JobCompletePage() {
                 placeholder="Phone (For example: 8085551234)"
                 style={{
                   ...styles.input,
-                  borderColor: phoneError ? "#f87171" : "#2a2a2a",
+                  borderColor: phoneError ? "#f87171" : "#3a3a3c",
                 }}
                 required
               />
@@ -214,7 +199,6 @@ export default function JobCompletePage() {
               disabled={formState === "submitting"}
               style={{
                 ...styles.submitBtn,
-                background: brand,
                 opacity: formState === "submitting" ? 0.6 : 1,
                 cursor: formState === "submitting" ? "default" : "pointer",
               }}
@@ -238,54 +222,41 @@ export default function JobCompletePage() {
 const styles: Record<string, React.CSSProperties> = {
   page: {
     minHeight: "100dvh",
-    background: "#111111",
+    background: "#1c1c1e",
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
     padding: "28px 16px 56px",
     fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-    color: "#f1f5f9",
-  },
-  vfBadge: {
-    width: 52,
-    height: 52,
-    borderRadius: 14,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontSize: 20,
-    fontWeight: 900,
-    color: "#fff",
-    letterSpacing: -1,
-    marginBottom: 20,
-    flexShrink: 0,
+    color: "#ffffff",
   },
   card: {
-    background: "#1a1a1a",
-    borderRadius: 18,
+    background: "#2c2c2e",
+    borderRadius: 20,
     padding: "28px 22px",
     width: "100%",
     maxWidth: 480,
+    border: "1px solid #3a3a3c",
   },
   heading: {
     fontSize: 21,
     fontWeight: 700,
-    color: "#f8fafc",
+    color: "#ffffff",
     textAlign: "center",
     marginBottom: 22,
   },
   infoBox: {
-    background: "#111",
-    borderLeft: "3px solid",
+    background: "#1c1c1e",
+    borderLeft: "3px solid #D4860A",
     borderRadius: 8,
     padding: "16px 16px 16px 18px",
     marginBottom: 26,
     fontSize: 13,
     lineHeight: 1.75,
-    color: "#94a3b8",
+    color: "#8e8e93",
   },
   infoStep: {
-    color: "#cbd5e1",
+    color: "#ffffff",
     fontWeight: 600,
     marginBottom: 4,
   },
@@ -293,7 +264,7 @@ const styles: Record<string, React.CSSProperties> = {
     marginBottom: 4,
   },
   infoNote: {
-    color: "#64748b",
+    color: "#8e8e93",
     fontStyle: "italic",
     marginBottom: 4,
   },
@@ -310,19 +281,19 @@ const styles: Record<string, React.CSSProperties> = {
   label: {
     fontSize: 12,
     fontWeight: 700,
-    color: "#94a3b8",
+    color: "#8e8e93",
     textTransform: "uppercase",
     letterSpacing: "0.05em",
     marginBottom: 7,
   },
   input: {
     width: "100%",
-    background: "#111",
+    background: "#3a3a3c",
     border: "1px solid",
     borderRadius: 10,
     padding: "13px 14px",
     fontSize: 16,
-    color: "#f1f5f9",
+    color: "#ffffff",
     outline: "none",
     fontFamily: "inherit",
     WebkitAppearance: "none",
@@ -334,6 +305,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   submitBtn: {
     width: "100%",
+    background: "#D4860A",
     color: "#fff",
     border: "none",
     borderRadius: 12,
@@ -361,6 +333,6 @@ const styles: Record<string, React.CSSProperties> = {
   footer: {
     marginTop: 28,
     fontSize: 12,
-    color: "#2d2d2d",
+    color: "#3a3a3c",
   },
 };

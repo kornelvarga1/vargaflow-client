@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import NeedsAttentionSection from "@/components/dashboard/NeedsAttentionSection";
 import { useDashboardStats } from "@/hooks/useDashboardStats";
 import { useActivityLog } from "@/hooks/useActivityLog";
+import { useBusinessSettings } from "@/hooks/useBusinessSettings";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -28,12 +29,16 @@ const activityIcons: Record<string, typeof Activity> = {
 export default function Index() {
   const { data: stats, isLoading: statsLoading } = useDashboardStats();
   const { data: activities = [], isLoading: actLoading } = useActivityLog(15);
+  const { data: bizSettings } = useBusinessSettings();
+  const firstName = bizSettings?.my_name?.split(" ")[0] || "";
 
   return (
     <div className="p-4 md:p-8 max-w-6xl mx-auto space-y-6 animate-slide-up">
       <div>
         <h1 className="text-3xl font-display font-bold">Dashboard</h1>
-        <p className="text-muted-foreground mt-1">Welcome back.</p>
+        <p className="text-muted-foreground mt-1">
+          {firstName ? `Welcome back, ${firstName}!` : "Welcome back."}
+        </p>
       </div>
 
       <NeedsAttentionSection />

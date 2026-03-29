@@ -26,7 +26,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       <aside className="hidden md:flex w-60 flex-col border-r border-border bg-sidebar shrink-0 border-t-[3px] border-t-primary">
         <div className="flex items-center gap-2 px-5 py-4 border-b border-border">
           <Zap className="w-4 h-4 text-primary shrink-0" />
-          <span className="text-[17px] font-display font-bold text-sidebar-foreground tracking-tight">Client Portal</span>
+          <span className="text-[17px] font-display font-bold text-sidebar-foreground tracking-tight">VargaFlow</span>
         </div>
         <nav className="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto">
           {navItems.map((item) => (
@@ -69,7 +69,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             <div className="flex items-center justify-between px-5 py-4 border-b border-border">
               <div className="flex items-center gap-2">
                 <Zap className="w-4 h-4 text-primary shrink-0" />
-                <span className="text-[17px] font-display font-bold text-sidebar-foreground tracking-tight">Client Portal</span>
+                <span className="text-[17px] font-display font-bold text-sidebar-foreground tracking-tight">VargaFlow</span>
               </div>
               <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setMobileMenuOpen(false)}>
                 <X className="w-4 h-4" />
