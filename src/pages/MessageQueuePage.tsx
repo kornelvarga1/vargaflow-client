@@ -491,7 +491,7 @@ function MessageBubble({ message }: { message: Message }) {
         className={`max-w-[82%] rounded-3xl px-4 py-3 ${
           isOutbound
             ? "bg-primary text-primary-foreground rounded-br-lg"
-            : "bg-secondary text-secondary-foreground rounded-bl-lg"
+            : "bg-[var(--bubble-in-bg)] text-[var(--bubble-in-text)] rounded-bl-lg"
         } ${isCancelled ? "opacity-50 line-through" : ""} ${isPending && isOutbound ? "opacity-60" : ""}`}
       >
         <p className="text-base leading-relaxed whitespace-pre-wrap">

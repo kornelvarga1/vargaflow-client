@@ -6,12 +6,15 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Settings, Check, Loader2, Bell, BellOff } from "lucide-react";
+import { Settings, Check, Loader2, Bell, BellOff, Moon } from "lucide-react";
 import { toast } from "sonner";
 import { requestNotificationPermission, getNotificationPermissionState } from "@/hooks/usePushNotifications";
+import { Switch } from "@/components/ui/switch";
+import { useDarkMode } from "@/hooks/useDarkMode";
 
 
 export default function SettingsPage() {
+  const { isDark, toggle } = useDarkMode();
   const { data: customValues, isLoading } = useCustomValues();
   const updateMutation = useUpdateCustomValue();
   const { data: businessId } = useBusinessId();
@@ -96,6 +99,30 @@ export default function SettingsPage() {
           Save All
         </Button>
       </div>
+
+      {/* Appearance */}
+      <Card className="bg-card border-border shadow-card">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-base font-display">
+            <Moon className="w-4 h-4 text-accent-foreground" />
+            Appearance
+          </CardTitle>
+        </CardHeader>
+        <Separator />
+        <CardContent className="pt-4">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-medium">Dark Mode</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Switch app theme</p>
+            </div>
+            <Switch
+              checked={isDark}
+              onCheckedChange={toggle}
+              className="data-[state=checked]:bg-[#D4860A]"
+            />
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Push Notifications */}
       <Card className="bg-card border-border shadow-card">
