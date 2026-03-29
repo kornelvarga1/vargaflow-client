@@ -184,11 +184,14 @@ export default function ContactProfilePage() {
           </Button>
           <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
             {(() => {
-              const initials = contact.full_name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
-              return initials === "" || initials.startsWith("+") ? (
+              const name = contact.full_name.trim();
+              const isPhone = !name || /^[+\d]/.test(name);
+              return isPhone ? (
                 <Phone className="w-4 h-4 text-primary" />
               ) : (
-                <span className="text-sm font-display font-bold text-primary">{initials}</span>
+                <span className="text-sm font-display font-bold text-primary">
+                  {name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
+                </span>
               );
             })()}
           </div>

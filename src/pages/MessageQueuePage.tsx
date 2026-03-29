@@ -330,11 +330,14 @@ export default function MessageQueuePage() {
                   >
                     <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                       {(() => {
-                        const initials = c.full_name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
-                        return initials === "" || initials.startsWith("+") ? (
+                        const name = c.full_name.trim();
+                        const isPhone = !name || /^[+\d]/.test(name);
+                        return isPhone ? (
                           <Phone className="w-5 h-5 text-primary" />
                         ) : (
-                          <span className="text-sm font-display font-bold text-primary">{initials}</span>
+                          <span className="text-sm font-display font-bold text-primary">
+                            {name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
+                          </span>
                         );
                       })()}
                     </div>
@@ -394,11 +397,14 @@ export default function MessageQueuePage() {
                     </Button>
                     <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                       {(() => {
-                        const initials = selectedContact.full_name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
-                        return initials === "" || initials.startsWith("+") ? (
+                        const name = selectedContact.full_name.trim();
+                        const isPhone = !name || /^[+\d]/.test(name);
+                        return isPhone ? (
                           <Phone className="w-4 h-4 text-primary" />
                         ) : (
-                          <span className="text-xs font-display font-bold text-primary">{initials}</span>
+                          <span className="text-xs font-display font-bold text-primary">
+                            {name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
+                          </span>
                         );
                       })()}
                     </div>
