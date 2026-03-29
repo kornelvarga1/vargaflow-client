@@ -1,25 +1,40 @@
 import { useState, useEffect } from "react";
 import { useCustomValues, useUpdateCustomValue, type CustomValue } from "@/hooks/useCustomValues";
 import { useBusinessId } from "@/hooks/useBusinessId";
+import { useBusinessSettings, useUpdateBusinessSettings, type BusinessSettings } from "@/hooks/useBusinessSettings";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Settings, Check, Loader2, Bell, BellOff, Moon } from "lucide-react";
+import { Settings, Check, Loader2, Bell, BellOff, Moon, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { requestNotificationPermission, getNotificationPermissionState } from "@/hooks/usePushNotifications";
 import { Switch } from "@/components/ui/switch";
 import { useDarkMode } from "@/hooks/useDarkMode";
 
 
+const SETTINGS_FIELDS: { key: keyof BusinessSettings; label: string; isUrl: boolean }[] = [
+  { key: "my_name", label: "My Name", isUrl: false },
+  { key: "my_phone", label: "My Phone", isUrl: false },
+  { key: "my_email", label: "My Email", isUrl: false },
+  { key: "company_name", label: "Company Name", isUrl: false },
+  { key: "gmb_review_link", label: "GMB Review Link", isUrl: true },
+  { key: "quote_form_link", label: "Quote Form Link", isUrl: true },
+  { key: "marketing_form_link", label: "Marketing Form Link", isUrl: true },
+];
+
 export default function SettingsPage() {
   const { isDark, toggle } = useDarkMode();
   const { data: customValues, isLoading } = useCustomValues();
   const updateMutation = useUpdateCustomValue();
   const { data: businessId } = useBusinessId();
+  const { data: businessSettings } = useBusinessSettings();
+  const updateSettings = useUpdateBusinessSettings();
   const [localValues, setLocalValues] = useState<Record<string, string>>({});
   const [dirtyKeys, setDirtyKeys] = useState<Set<string>>(new Set());
+  const [settingsLocal, setSettingsLocal] = useState<Record<string, string>>({});
+  const [settingsDirty, setSettingsDirty] = useState<Set<string>>(new Set());
   const [notifPermission, setNotifPermission] = useState<NotificationPermission | "unsupported">("default");
   const [notifLoading, setNotifLoading] = useState(false);
 
@@ -34,6 +49,12 @@ export default function SettingsPage() {
       setLocalValues(vals);
     }
   }, [customValues]);
+
+  useEffect(() => {
+    if (businessSettings) {
+      setSettingsLocal(businessSettings as unknown as Record<string, string>);
+    }
+  }, [businessSettings]);
 
   const handleChange = (id: string, value: string) => {
     setLocalValues((prev) => ({ ...prev, [id]: value }));
@@ -56,18 +77,27 @@ export default function SettingsPage() {
 
   const handleSaveAll = async () => {
     const dirty = Array.from(dirtyKeys);
-    if (dirty.length === 0) {
+    const hasSettingsDirty = settingsDirty.size > 0;
+    if (dirty.length === 0 && !hasSettingsDirty) {
       toast.info("No changes to save");
       return;
     }
     try {
-      await Promise.all(
-        dirty.map((id) =>
+      await Promise.all([
+        ...dirty.map((id) =>
           updateMutation.mutateAsync({ id, value: localValues[id] || "" })
-        )
-      );
+        ),
+        ...(hasSettingsDirty
+          ? [updateSettings.mutateAsync(
+              Object.fromEntries(
+                Array.from(settingsDirty).map((k) => [k, settingsLocal[k] || ""])
+              ) as Partial<BusinessSettings>
+            )]
+          : []),
+      ]);
       setDirtyKeys(new Set());
-      toast.success(`Saved ${dirty.length} change(s)`);
+      setSettingsDirty(new Set());
+      toast.success(`Saved ${dirty.length + (hasSettingsDirty ? settingsDirty.size : 0)} change(s)`);
     } catch {
       toast.error("Failed to save some values");
     }
@@ -92,7 +122,7 @@ export default function SettingsPage() {
         </div>
         <Button
           onClick={handleSaveAll}
-          disabled={dirtyKeys.size === 0}
+          disabled={dirtyKeys.size === 0 && settingsDirty.size === 0}
           className="gradient-primary text-primary-foreground"
         >
           <Check className="w-4 h-4 mr-1.5" />
@@ -185,25 +215,25 @@ export default function SettingsPage() {
         </CardHeader>
         <Separator />
         <CardContent className="pt-4 space-y-4">
-          {items.map((item) => (
-            <div key={item.id} className="space-y-1.5">
-              <Label className="text-sm text-muted-foreground">{item.label}</Label>
+          {SETTINGS_FIELDS.map(({ key, label, isUrl }) => (
+            <div key={key} className="space-y-1.5">
+              <Label className="text-sm text-muted-foreground">{label}</Label>
               <div className="flex gap-2">
                 <Input
-                  value={localValues[item.id] ?? ""}
-                  onChange={(e) => handleChange(item.id, e.target.value)}
-                  placeholder={`Enter ${item.label.toLowerCase()}...`}
+                  value={settingsLocal[key] ?? ""}
+                  onChange={(e) => {
+                    setSettingsLocal((prev) => ({ ...prev, [key]: e.target.value }));
+                    setSettingsDirty((prev) => new Set(prev).add(key));
+                  }}
+                  placeholder={`Enter ${label.toLowerCase()}...`}
                   className="bg-secondary border-border"
                 />
-                {dirtyKeys.has(item.id) && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleSave(item.id)}
-                    className="shrink-0"
-                  >
-                    <Check className="w-3 h-3" />
-                  </Button>
+                {isUrl && settingsLocal[key] && (
+                  <a href={settingsLocal[key]} target="_blank" rel="noopener noreferrer">
+                    <Button type="button" variant="outline" size="icon" className="shrink-0">
+                      <ExternalLink className="w-4 h-4" />
+                    </Button>
+                  </a>
                 )}
               </div>
             </div>

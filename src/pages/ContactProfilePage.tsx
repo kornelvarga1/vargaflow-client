@@ -31,7 +31,9 @@ import {
   Activity,
   Loader2,
   Copy,
+  Pencil,
 } from "lucide-react";
+import ContactFormDialog from "@/components/contacts/ContactFormDialog";
 import { toast } from "sonner";
 import { format, formatDistanceToNow } from "date-fns";
 
@@ -130,6 +132,7 @@ export default function ContactProfilePage() {
   const qc = useQueryClient();
 
   const [smsDialogOpen, setSmsDialogOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
 
   if (isLoading) {
     return (
@@ -196,6 +199,9 @@ export default function ContactProfilePage() {
             })()}
           </div>
           <h1 className="text-xl font-display font-bold truncate flex-1">{contact.full_name}</h1>
+          <Button variant="outline" size="icon" className="shrink-0" onClick={() => setEditOpen(true)}>
+            <Pencil className="w-4 h-4" />
+          </Button>
           <Button variant="outline" size="icon" className="shrink-0" onClick={() => setSmsDialogOpen(true)}>
             <MessageSquare className="w-4 h-4" />
           </Button>
@@ -238,8 +244,24 @@ export default function ContactProfilePage() {
               <div className="text-xs text-muted-foreground">
                 Added {formatDistanceToNow(new Date(contact.created_at), { addSuffix: true })}
               </div>
-              {contact.notes && (
-                <p className="text-xs text-muted-foreground bg-secondary/50 p-2 rounded">{contact.notes}</p>
+            </CardContent>
+          </Card>
+
+          {/* Notes */}
+          <Card className="bg-card border-border">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-display flex items-center justify-between">
+                <span>Notes</span>
+                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setEditOpen(true)}>
+                  <Pencil className="w-3 h-3" />
+                </Button>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {contact.notes ? (
+                <p className="text-sm text-muted-foreground whitespace-pre-wrap">{contact.notes}</p>
+              ) : (
+                <p className="text-sm text-muted-foreground italic">No notes yet. Tap edit to add.</p>
               )}
             </CardContent>
           </Card>
@@ -317,6 +339,14 @@ export default function ContactProfilePage() {
       </div>
 
       {/* Dialogs */}
+      <ContactFormDialog
+        open={editOpen}
+        onOpenChange={(open) => {
+          setEditOpen(open);
+          if (!open) qc.invalidateQueries({ queryKey: ["contact"] });
+        }}
+        contact={contact}
+      />
       <SendSmsDialog
         open={smsDialogOpen}
         onOpenChange={setSmsDialogOpen}
