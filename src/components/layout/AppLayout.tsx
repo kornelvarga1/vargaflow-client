@@ -133,7 +133,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       </nav>
 
       {/* Main content */}
-      <main className={`flex-1 md:pb-0 ${isConversationOpen ? "overflow-hidden pb-0" : "overflow-auto pb-20"}`}>{children}</main>
+      <main className={`flex-1 min-h-0 md:pb-0 ${isConversationOpen ? "overflow-hidden pb-0 flex flex-col" : "overflow-auto pb-20"}`}>{children}</main>
     </div>
   );
 }
