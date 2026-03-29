@@ -268,7 +268,7 @@ export default function MessageQueuePage() {
     ALL_STAGES.find((s) => s.key === key && s.pipeline === pipeline)?.label || key;
 
   return (
-    <div className="flex flex-col flex-1 min-h-0 overflow-hidden animate-fade-in">
+    <div className="flex flex-1 min-h-0 overflow-hidden animate-fade-in">
       {/* Left Panel: Contact List */}
       <div className={`flex flex-col border-border shrink-0 w-full md:w-80 lg:w-96 md:border-r ${selectedContactId ? "hidden md:flex" : "flex"}`}>
 
@@ -370,7 +370,7 @@ export default function MessageQueuePage() {
             Desktop:       flex-1, sits beside the left panel */}
       <div className={
         selectedContactId
-          ? "flex flex-col flex-1 min-w-0 overflow-hidden bg-background"
+          ? "flex flex-col h-dvh min-w-0 overflow-hidden bg-background md:flex-1 md:h-auto"
           : "hidden md:flex md:flex-col md:flex-1 md:min-w-0"
       }>
           {!selectedContactId ? (

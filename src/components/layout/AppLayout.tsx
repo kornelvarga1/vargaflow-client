@@ -21,7 +21,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const { isConversationOpen } = useConversationOpen();
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-dvh overflow-hidden">
       {/* Desktop Sidebar */}
       <aside className="hidden md:flex w-60 flex-col border-r border-border bg-sidebar shrink-0 border-t-[3px] border-t-primary">
         <div className="flex items-center gap-2 px-5 py-4 border-b border-border">
