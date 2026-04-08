@@ -427,6 +427,13 @@ export default function MessageQueuePage() {
                       })()}
                     </div>
                     <p className="font-display font-semibold text-base flex-1 truncate">{selectedContact.full_name}</p>
+                    {selectedContact.phone && (
+                      <a href={`tel:${selectedContact.phone}`} className="shrink-0">
+                        <Button variant="ghost" size="icon" className="h-9 w-9">
+                          <Phone className="w-4 h-4" />
+                        </Button>
+                      </a>
+                    )}
                     <Link to={`/contacts/${selectedContact.id}`} className="shrink-0">
                       <Button variant="ghost" size="icon" className="h-9 w-9">
                         <ArrowRight className="w-4 h-4" />
