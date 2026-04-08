@@ -225,10 +225,10 @@ export default function ContactProfilePage() {
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
               {contact.phone && (
-                <div className="flex items-center gap-2">
+                <a href={`tel:${contact.phone}`} className="flex items-center gap-2 hover:text-primary transition-colors">
                   <Phone className="w-4 h-4 text-muted-foreground shrink-0" />
                   <span>{contact.phone}</span>
-                </div>
+                </a>
               )}
               {contact.email && (
                 <div className="flex items-center gap-2">
