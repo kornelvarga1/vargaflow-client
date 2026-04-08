@@ -20,9 +20,11 @@
 
 import {
   corsHeaders,
+  fetchClientTemplate,
   fetchSettings,
   getSupabaseAdmin,
   jsonResponse,
+  resolveClientTemplate,
   scheduleFunctionCall,
   scheduleOwnerSMS,
   sendSMSNow,
@@ -130,19 +132,34 @@ Deno.serve(async (req) => {
       const offer = await getReactivationOffer(supabase, business_id);
       const smsSentAt = new Date().toISOString();
 
+      const vars = {
+        first_name: contact_first_name,
+        my_name: my_name ?? "",
+        company_name: company_name ?? "",
+        contact_phone: contact_phone ?? "",
+        reactivation_offer: offer,
+      };
+
       // Email to contact
+      const emailTpl = await fetchClientTemplate(supabase, "db-reactivation", "email_initial", business_id);
       await sendEmail({
         to: contact_email,
         from: my_email,
         subject: `${contact_first_name}, you there?`,
-        text:
-          `Hey ${contact_first_name}, I tried to text you at ${contact_phone}. Wanted to reach out because my team and I are doing a ${offer} this week. Only catch is we can only bring on three clients while supplies last. Thought you might be interested. Let me know — no worries either way. ${my_name} from ${company_name}`,
+        text: resolveClientTemplate(
+          emailTpl?.content ?? `Hey {{first_name}}, I tried to text you at {{contact_phone}}. Wanted to reach out because my team and I are doing a {{reactivation_offer}} this week. Only catch is we can only bring on three clients while supplies last. Thought you might be interested. Let me know — no worries either way. {{my_name}} from {{company_name}}`,
+          vars,
+        ),
       });
 
       // Immediate SMS to contact
+      const smsTpl = await fetchClientTemplate(supabase, "db-reactivation", "sms_initial", business_id);
       await sendSMSNow(
         contact_phone,
-        `Hey ${contact_first_name}, wanted to reach out because my team and I are doing a ${offer} this week. Only catch is we can only bring on three clients while supplies last. You might be interested — let me know, no worries either way. ${my_name}`,
+        resolveClientTemplate(
+          smsTpl?.content ?? `Hey {{first_name}}, wanted to reach out because my team and I are doing a {{reactivation_offer}} this week. Only catch is we can only bring on three clients while supplies last. You might be interested — let me know, no worries either way. {{my_name}}`,
+          vars,
+        ),
         twilio_phone_number,
       );
 
@@ -175,10 +192,19 @@ Deno.serve(async (req) => {
     } else if (step === "followup") {
       const smsSentAt = new Date().toISOString();
 
+      const followupVars = {
+        first_name: contact_first_name,
+        my_name: my_name ?? "",
+      };
+
       // Immediate follow-up SMS to contact
+      const followupTpl = await fetchClientTemplate(supabase, "db-reactivation", "sms_followup", business_id);
       await sendSMSNow(
         contact_phone,
-        `Hey ${contact_first_name}, did you get my text yesterday? Only have two spots left for the offer. Let me know if I should save you a spot while we have the extra supplies — respond back with yes or no so I know whether to save your spot or not. Enjoy your day. ${my_name}`,
+        resolveClientTemplate(
+          followupTpl?.content ?? `Hey {{first_name}}, did you get my text yesterday? Only have two spots left for the offer. Let me know if I should save you a spot while we have the extra supplies — respond back with yes or no so I know whether to save your spot or not. Enjoy your day. {{my_name}}`,
+          followupVars,
+        ),
         twilio_phone_number,
       );
 

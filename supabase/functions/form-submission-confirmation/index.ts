@@ -13,10 +13,12 @@
 import {
   addTag,
   corsHeaders,
+  fetchClientTemplate,
   fetchSettings,
   getFirstName,
   getSupabaseAdmin,
   jsonResponse,
+  resolveClientTemplate,
   scheduleContactSMS,
   scheduleFunctionCall,
   scheduleOwnerSMS,
@@ -65,22 +67,34 @@ Deno.serve(async (req) => {
         `New lead from website form. Name: ${contact_name}. Phone: ${contact_phone}. Message: ${message}. We have let them know you will be in touch soon. [do not reply - not a client]`,
     });
 
+    const vars = {
+      first_name: firstName,
+      my_name: settings.my_name ?? "",
+      company_name: settings.company_name ?? "",
+    };
+
     // Message 1 to contact — 30 seconds
+    const tpl1 = await fetchClientTemplate(supabase, "form-submission-confirmation", "sms1", business_id);
     await scheduleContactSMS(supabase, {
       contact_id: contact.id,
       business_id,
       delaySeconds: 30,
-      content:
-        `Hey ${firstName}, got your quote form. I will be in touch shortly — ${settings.my_name}, ${settings.company_name}`,
+      content: resolveClientTemplate(
+        tpl1?.content ?? `Hey {{first_name}}, got your quote form. I will be in touch shortly — {{my_name}}, {{company_name}}`,
+        vars,
+      ),
     });
 
     // Message 2 to contact — 60 seconds
+    const tpl2 = await fetchClientTemplate(supabase, "form-submission-confirmation", "sms2", business_id);
     await scheduleContactSMS(supabase, {
       contact_id: contact.id,
       business_id,
       delaySeconds: 60,
-      content:
-        `I will be in touch shortly. Sorry I haven't had enough coffee today. Talk soon.`,
+      content: resolveClientTemplate(
+        tpl2?.content ?? `I will be in touch shortly. Sorry I haven't had enough coffee today. Talk soon.`,
+        vars,
+      ),
     });
 
     // Schedule 10-day marketing form reminder (processed by message_queue cron → marketing-form-reminder function)

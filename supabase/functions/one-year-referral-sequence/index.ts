@@ -18,9 +18,11 @@
 
 import {
   corsHeaders,
+  fetchClientTemplate,
   fetchSettings,
   getSupabaseAdmin,
   jsonResponse,
+  resolveClientTemplate,
   scheduleContactSMS,
   scheduleFunctionCall,
   scheduleOwnerSMS,
@@ -112,12 +114,16 @@ Deno.serve(async (req) => {
     if (step === "sms1") {
       const discountAmount = await getDiscountAmount(supabase, business_id);
       const smsSentAt = new Date().toISOString();
+      const vars1 = { first_name: contact_first_name, my_name: my_name ?? "", company_name: company_name ?? "", website_url: website_url ?? "", discount_amount: discountAmount };
+      const tpl1 = await fetchClientTemplate(supabase, "one-year-referral-sequence", "sms1", business_id);
       await scheduleContactSMS(supabase, {
         contact_id,
         business_id,
         delaySeconds: 0,
-        content:
-          `Hey ${contact_first_name}, I am running a season special this week and giving ${discountAmount}. It's only for the first 3 people — so if you are interested or know someone who might be, just tap the link: ${website_url}/getyourdiscount ${my_name} from ${company_name}`,
+        content: resolveClientTemplate(
+          tpl1?.content ?? `Hey {{first_name}}, I am running a season special this week and giving {{discount_amount}}. It's only for the first 3 people — so if you are interested or know someone who might be, just tap the link: {{website_url}}/getyourdiscount {{my_name}} from {{company_name}}`,
+          vars1,
+        ),
       });
       await scheduleFunctionCall(supabase, {
         function_name: "one-year-referral-sequence",
@@ -145,12 +151,16 @@ Deno.serve(async (req) => {
     } else if (step === "sms2") {
       const discountAmount = await getDiscountAmount(supabase, business_id);
       const smsSentAt = new Date().toISOString();
+      const vars2 = { first_name: contact_first_name, my_name: my_name ?? "", company_name: company_name ?? "", website_url: website_url ?? "", discount_amount: discountAmount };
+      const tpl2 = await fetchClientTemplate(supabase, "one-year-referral-sequence", "sms2", business_id);
       await scheduleContactSMS(supabase, {
         contact_id,
         business_id,
         delaySeconds: 0,
-        content:
-          `Hey ${contact_first_name}, I am running a customer anniversary special for the next 6 days and giving ${discountAmount}. So if you are interested or know someone who might be, just tap this link: ${website_url}/getyourdiscount ${my_name} from ${company_name}`,
+        content: resolveClientTemplate(
+          tpl2?.content ?? `Hey {{first_name}}, I am running a customer anniversary special for the next 6 days and giving {{discount_amount}}. So if you are interested or know someone who might be, just tap this link: {{website_url}}/getyourdiscount {{my_name}} from {{company_name}}`,
+          vars2,
+        ),
       });
       await scheduleOwnerSMS(supabase, {
         to_phone: my_phone,
@@ -185,12 +195,16 @@ Deno.serve(async (req) => {
     } else if (step === "sms3") {
       const discountAmount = await getDiscountAmount(supabase, business_id);
       const smsSentAt = new Date().toISOString();
+      const vars3 = { first_name: contact_first_name, my_name: my_name ?? "", company_name: company_name ?? "", website_url: website_url ?? "", discount_amount: discountAmount };
+      const tpl3 = await fetchClientTemplate(supabase, "one-year-referral-sequence", "sms3", business_id);
       await scheduleContactSMS(supabase, {
         contact_id,
         business_id,
         delaySeconds: 0,
-        content:
-          `Hey ${contact_first_name}, I am running a loyalty special this week and giving ${discountAmount}. It's only for the first 3 people — so if you are interested or know someone who might be, just tap the link: ${website_url}/getyourdiscount ${my_name} from ${company_name}`,
+        content: resolveClientTemplate(
+          tpl3?.content ?? `Hey {{first_name}}, I am running a loyalty special this week and giving {{discount_amount}}. It's only for the first 3 people — so if you are interested or know someone who might be, just tap the link: {{website_url}}/getyourdiscount {{my_name}} from {{company_name}}`,
+          vars3,
+        ),
       });
       await scheduleFunctionCall(supabase, {
         function_name: "one-year-referral-sequence",
@@ -218,12 +232,16 @@ Deno.serve(async (req) => {
     } else if (step === "sms4") {
       const discountAmount = await getDiscountAmount(supabase, business_id);
       const smsSentAt = new Date().toISOString();
+      const vars4 = { first_name: contact_first_name, my_name: my_name ?? "", company_name: company_name ?? "", website_url: website_url ?? "", discount_amount: discountAmount };
+      const tpl4 = await fetchClientTemplate(supabase, "one-year-referral-sequence", "sms4", business_id);
       await scheduleContactSMS(supabase, {
         contact_id,
         business_id,
         delaySeconds: 0,
-        content:
-          `Hey ${contact_first_name}, I am running a special this week and giving ${discountAmount} on referrals. It's only for the first 4 people — so if you are interested or know someone who might be, just tap this link: ${website_url}/getyourdiscount ${my_name} from ${company_name}`,
+        content: resolveClientTemplate(
+          tpl4?.content ?? `Hey {{first_name}}, I am running a special this week and giving {{discount_amount}} on referrals. It's only for the first 4 people — so if you are interested or know someone who might be, just tap this link: {{website_url}}/getyourdiscount {{my_name}} from {{company_name}}`,
+          vars4,
+        ),
       });
       await scheduleFunctionCall(supabase, {
         function_name: "one-year-referral-sequence",
@@ -251,12 +269,16 @@ Deno.serve(async (req) => {
     } else if (step === "sms5") {
       const discountAmount = await getDiscountAmount(supabase, business_id);
       const smsSentAt = new Date().toISOString();
+      const vars5 = { first_name: contact_first_name, my_name: my_name ?? "", company_name: company_name ?? "", website_url: website_url ?? "", discount_amount: discountAmount };
+      const tpl5 = await fetchClientTemplate(supabase, "one-year-referral-sequence", "sms5", business_id);
       await scheduleContactSMS(supabase, {
         contact_id,
         business_id,
         delaySeconds: 0,
-        content:
-          `Hey ${contact_first_name}, I am running an anniversary special giving ${discountAmount}. It's only for the first 6 days — so if you're interested or know someone who might be, just tap this link: ${website_url}/getyourdiscount ${my_name} from ${company_name}`,
+        content: resolveClientTemplate(
+          tpl5?.content ?? `Hey {{first_name}}, I am running an anniversary special giving {{discount_amount}}. It's only for the first 6 days — so if you're interested or know someone who might be, just tap this link: {{website_url}}/getyourdiscount {{my_name}} from {{company_name}}`,
+          vars5,
+        ),
       });
       await scheduleFunctionCall(supabase, {
         function_name: "one-year-referral-sequence",

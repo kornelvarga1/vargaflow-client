@@ -16,9 +16,11 @@
 import {
   addTag,
   corsHeaders,
+  fetchClientTemplate,
   fetchSettings,
   getSupabaseAdmin,
   jsonResponse,
+  resolveClientTemplate,
   scheduleContactSMS,
   upsertContact,
 } from "../_shared/helpers.ts";
@@ -98,22 +100,34 @@ Deno.serve(async (req) => {
 
     await addTag(supabase, contact.id, "missed-call");
 
+    const vars = {
+      my_name: settings.my_name ?? "",
+      company_name: settings.company_name ?? "",
+      quote_form_link: settings.quote_form_link ?? "",
+    };
+
     // Message 1 — 1 minute delay
+    const tpl1 = await fetchClientTemplate(supabase, "missed-call-text-back", "sms1", business_id);
     await scheduleContactSMS(supabase, {
       contact_id: contact.id,
       business_id,
       delaySeconds: 60,
-      content:
-        `Hey, sorry I missed you. I will get back to you as soon as possible. If you want to give me a few details about the job, that would be great. You can click this link for a free quote: ${settings.quote_form_link} — ${settings.my_name} from ${settings.company_name}`,
+      content: resolveClientTemplate(
+        tpl1?.content ?? `Hey, sorry I missed you. I will get back to you as soon as possible. If you want to give me a few details about the job, that would be great. You can click this link for a free quote: {{quote_form_link}} — {{my_name}} from {{company_name}}`,
+        vars,
+      ),
     });
 
     // Message 2 — 3 minutes delay
+    const tpl2 = await fetchClientTemplate(supabase, "missed-call-text-back", "sms2", business_id);
     await scheduleContactSMS(supabase, {
       contact_id: contact.id,
       business_id,
       delaySeconds: 180,
-      content:
-        `Look forward to hearing from you. In the meantime, are there any questions I can answer here for you?`,
+      content: resolveClientTemplate(
+        tpl2?.content ?? `Look forward to hearing from you. In the meantime, are there any questions I can answer here for you?`,
+        vars,
+      ),
     });
 
     return jsonResponse({ success: true, contact_id: contact.id });

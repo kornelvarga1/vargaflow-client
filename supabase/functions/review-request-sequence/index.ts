@@ -16,9 +16,11 @@
 
 import {
   corsHeaders,
+  fetchClientTemplate,
   fetchSettings,
   getSupabaseAdmin,
   jsonResponse,
+  resolveClientTemplate,
   scheduleContactSMS,
   scheduleFunctionCall,
   scheduleOwnerSMS,
@@ -68,14 +70,25 @@ Deno.serve(async (req) => {
       ...overrides,
     });
 
+    const reviewLink = `https://zfmchywjmgykmlhjihls.supabase.co/functions/v1/review-link-clicked?contact_id=${contact_id}&business_id=${business_id}`;
+    const reviewVars = {
+      first_name: contact_first_name,
+      my_name: my_name ?? "",
+      company_name: company_name ?? "",
+      review_link: reviewLink,
+    };
+
     if (step === "sms1") {
       const smsSentAt = new Date().toISOString();
+      const tpl = await fetchClientTemplate(supabase, "review-request-sequence", "sms1", business_id);
       await scheduleContactSMS(supabase, {
         contact_id,
         business_id,
         delaySeconds: 0,
-        content:
-          `Hey ${contact_first_name}, this is ${my_name}. I hope you had a great experience with ${company_name}. We donate a meal to charity for every customer who takes 10 seconds to leave a review. Here is the link: https://zfmchywjmgykmlhjihls.supabase.co/functions/v1/review-link-clicked?contact_id=${contact_id}&business_id=${business_id}`,
+        content: resolveClientTemplate(
+          tpl?.content ?? `Hey {{first_name}}, this is {{my_name}}. I hope you had a great experience with {{company_name}}. We donate a meal to charity for every customer who takes 10 seconds to leave a review. Here is the link: {{review_link}}`,
+          reviewVars,
+        ),
       });
       await scheduleFunctionCall(supabase, {
         function_name: "review-request-sequence",
@@ -95,12 +108,15 @@ Deno.serve(async (req) => {
       }
     } else if (step === "sms2") {
       const smsSentAt = new Date().toISOString();
+      const tpl = await fetchClientTemplate(supabase, "review-request-sequence", "sms2", business_id);
       await scheduleContactSMS(supabase, {
         contact_id,
         business_id,
         delaySeconds: 0,
-        content:
-          `Hey ${contact_first_name}, I wanted to follow up because I saw you haven't left a review yet. We donate a meal to charity for every customer that leaves a review. If you have 10 seconds to help someone you know or don't know, you are our kind of people. Click here: https://zfmchywjmgykmlhjihls.supabase.co/functions/v1/review-link-clicked?contact_id=${contact_id}&business_id=${business_id} PS - just say 'bye' if you want me to stop texting you`,
+        content: resolveClientTemplate(
+          tpl?.content ?? `Hey {{first_name}}, I wanted to follow up because I saw you haven't left a review yet. We donate a meal to charity for every customer that leaves a review. If you have 10 seconds to help someone you know or don't know, you are our kind of people. Click here: {{review_link}} PS - just say 'bye' if you want me to stop texting you`,
+          reviewVars,
+        ),
       });
       await scheduleFunctionCall(supabase, {
         function_name: "review-request-sequence",
@@ -120,12 +136,15 @@ Deno.serve(async (req) => {
       }
     } else if (step === "sms3") {
       const smsSentAt = new Date().toISOString();
+      const tpl = await fetchClientTemplate(supabase, "review-request-sequence", "sms3", business_id);
       await scheduleContactSMS(supabase, {
         contact_id,
         business_id,
         delaySeconds: 0,
-        content:
-          `Little review reminder in case you got extra busy this week. (We give a free meal to someone in need for each new review.) Here is the link again: https://zfmchywjmgykmlhjihls.supabase.co/functions/v1/review-link-clicked?contact_id=${contact_id}&business_id=${business_id}`,
+        content: resolveClientTemplate(
+          tpl?.content ?? `Little review reminder in case you got extra busy this week. (We give a free meal to someone in need for each new review.) Here is the link again: {{review_link}}`,
+          reviewVars,
+        ),
       });
       await scheduleFunctionCall(supabase, {
         function_name: "review-request-sequence",
@@ -145,12 +164,15 @@ Deno.serve(async (req) => {
       }
     } else if (step === "sms4") {
       const smsSentAt = new Date().toISOString();
+      const tpl = await fetchClientTemplate(supabase, "review-request-sequence", "sms4", business_id);
       await scheduleContactSMS(supabase, {
         contact_id,
         business_id,
         delaySeconds: 0,
-        content:
-          `Hey ${contact_first_name}, this is the last time I will request a review from you, I promise. If you have a sec to leave one, we will donate a meal to a person in need. Here's the link — and thanks for helping those in need: https://zfmchywjmgykmlhjihls.supabase.co/functions/v1/review-link-clicked?contact_id=${contact_id}&business_id=${business_id}`,
+        content: resolveClientTemplate(
+          tpl?.content ?? `Hey {{first_name}}, this is the last time I will request a review from you, I promise. If you have a sec to leave one, we will donate a meal to a person in need. Here's the link — and thanks for helping those in need: {{review_link}}`,
+          reviewVars,
+        ),
       });
       await scheduleFunctionCall(supabase, {
         function_name: "review-request-sequence",

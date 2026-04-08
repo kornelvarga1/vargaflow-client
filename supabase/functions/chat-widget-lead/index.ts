@@ -13,10 +13,12 @@
 import {
   addTag,
   corsHeaders,
+  fetchClientTemplate,
   fetchSettings,
   getFirstName,
   getSupabaseAdmin,
   jsonResponse,
+  resolveClientTemplate,
   scheduleContactSMS,
   scheduleOwnerSMS,
   upsertContact,
@@ -60,22 +62,34 @@ Deno.serve(async (req) => {
         `New lead from website chat widget. Name: ${contact_name}. Phone: ${contact_phone}. Message: ${message}. We have let them know you will be in touch soon. [do not reply - not a client]`,
     });
 
+    const vars = {
+      first_name: firstName,
+      my_name: settings.my_name ?? "",
+      company_name: settings.company_name ?? "",
+    };
+
     // Message 1 to contact — 10 seconds
+    const tpl1 = await fetchClientTemplate(supabase, "chat-widget-lead", "sms1", business_id);
     await scheduleContactSMS(supabase, {
       contact_id: contact.id,
       business_id,
       delaySeconds: 10,
-      content:
-        `Hey ${firstName}, just got your text through my web chat. Thanks for reaching out 😊 I will be in touch as soon as I am free. — ${settings.my_name}, ${settings.company_name}`,
+      content: resolveClientTemplate(
+        tpl1?.content ?? `Hey {{first_name}}, just got your text through my web chat. Thanks for reaching out 😊 I will be in touch as soon as I am free. — {{my_name}}, {{company_name}}`,
+        vars,
+      ),
     });
 
     // Message 2 to contact — 40 seconds
+    const tpl2 = await fetchClientTemplate(supabase, "chat-widget-lead", "sms2", business_id);
     await scheduleContactSMS(supabase, {
       contact_id: contact.id,
       business_id,
       delaySeconds: 40,
-      content:
-        `*thanks for reaching out. Sorry I haven't had enough coffee today haha. By the way, if you have any other questions in the meantime, feel free to message me here.`,
+      content: resolveClientTemplate(
+        tpl2?.content ?? `*thanks for reaching out. Sorry I haven't had enough coffee today haha. By the way, if you have any other questions in the meantime, feel free to message me here.`,
+        vars,
+      ),
     });
 
     return jsonResponse({ success: true, contact_id: contact.id });

@@ -239,6 +239,57 @@ export function getFirstName(fullName: string): string {
   return fullName.trim().split(/\s+/)[0] ?? fullName;
 }
 
+// ── Client sequence template helpers ────────────────────────
+
+/**
+ * Fetches a message template for a given flow + step.
+ * Tries business-specific override first, then global default (business_id IS NULL).
+ * Returns null if no template exists — callers should fall back to their hardcoded string.
+ */
+export async function fetchClientTemplate(
+  supabase: SupabaseClient,
+  flowName: string,
+  stepName: string,
+  businessId: string,
+): Promise<{ content: string; subject: string | null } | null> {
+  // Business-specific override
+  const { data: override } = await supabase
+    .from("client_sequence_templates")
+    .select("content, subject")
+    .eq("flow_name", flowName)
+    .eq("step_name", stepName)
+    .eq("business_id", businessId)
+    .maybeSingle();
+
+  if (override) return override as { content: string; subject: string | null };
+
+  // Global default
+  const { data: global } = await supabase
+    .from("client_sequence_templates")
+    .select("content, subject")
+    .eq("flow_name", flowName)
+    .eq("step_name", stepName)
+    .is("business_id", null)
+    .maybeSingle();
+
+  return global ? (global as { content: string; subject: string | null }) : null;
+}
+
+/**
+ * Replaces {{variable}} placeholders in a template string.
+ * Unknown placeholders are left as-is.
+ *
+ * Standard vars: first_name, my_name, company_name, my_phone,
+ *                quote_form_link, website_url, contact_phone,
+ *                review_link, discount_amount, reactivation_offer
+ */
+export function resolveClientTemplate(
+  template: string,
+  vars: Record<string, string>,
+): string {
+  return template.replace(/\{\{(\w+)\}\}/g, (_, key) => vars[key] ?? `{{${key}}}`);
+}
+
 export function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
     status,

@@ -19,10 +19,12 @@
 import {
   addTag,
   corsHeaders,
+  fetchClientTemplate,
   fetchSettings,
   getFirstName,
   getSupabaseAdmin,
   jsonResponse,
+  resolveClientTemplate,
   scheduleOwnerSMS,
   sendIGMessage,
   upsertContact,
@@ -69,9 +71,17 @@ Deno.serve(async (req) => {
 
     // Automated Instagram DM reply to lead — sent immediately
     if (sender_id && settings.instagram_page_access_token) {
-      const replyText =
-        `Hey ${firstName}, thanks for contacting us here at ${settings.company_name}. I am a little slow to respond via social media but I will get back to you as soon as I can. If you ever want to text me directly at ${settings.my_phone} that would be awesome. PS this is an automated text but I will read it and get back to you as soon as I have a free second. Talk soon, ${settings.my_name}`;
-
+      const vars = {
+        first_name: firstName,
+        my_name: settings.my_name ?? "",
+        company_name: settings.company_name ?? "",
+        my_phone: settings.my_phone ?? "",
+      };
+      const tpl = await fetchClientTemplate(supabase, "ig-message-confirmation", "ig_reply", business_id);
+      const replyText = resolveClientTemplate(
+        tpl?.content ?? `Hey {{first_name}}, thanks for contacting us here at {{company_name}}. I am a little slow to respond via social media but I will get back to you as soon as I can. If you ever want to text me directly at {{my_phone}} that would be awesome. PS this is an automated text but I will read it and get back to you as soon as I have a free second. Talk soon, {{my_name}}`,
+        vars,
+      );
       await sendIGMessage(sender_id, replyText, settings.instagram_page_access_token);
     }
 
