@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { useBusinessId } from "@/hooks/useBusinessId";
@@ -59,8 +59,9 @@ function useConversationContacts(businessId: string | undefined) {
     queryFn: async () => {
       const { data: messages, error } = await supabase
         .from("message_queue")
-        .select("contact_id, message_content, scheduled_at, sent_at, status, message_type, created_at")
+        .select("contact_id, message_content, scheduled_at, sent_at, status, message_type, created_at, direction")
         .eq("business_id", businessId!)
+        .in("status", ["sent", "received"])
         .order("scheduled_at", { ascending: false })
         .limit(500);
 
@@ -102,7 +103,7 @@ function useConversationContacts(businessId: string | undefined) {
           stage: contact.stage,
           lastMessage: latest.message_content,
           lastMessageAt: latest.sent_at || latest.scheduled_at,
-          hasUnread: false,
+          hasUnread: msgs.some((m) => m.direction === "inbound" && m.status === "received"),
           messageCount: msgs.length,
         });
       }
@@ -185,10 +186,19 @@ type FilterType = "all" | "unread" | "sent";
 // --- Main Component ---
 
 export default function MessageQueuePage() {
-  const [selectedContactId, setSelectedContactId] = useState<string | null>(null);
+  const location = useLocation();
+  const [selectedContactId, setSelectedContactId] = useState<string | null>(
+    (location.state as { contactId?: string } | null)?.contactId ?? null
+  );
+  const [seenIds, setSeenIds] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<FilterType>("all");
   const { data: businessId } = useBusinessId();
+
+  const selectContact = (id: string) => {
+    setSelectedContactId(id);
+    setSeenIds((prev) => new Set([...prev, id]));
+  };
   const { data: contacts = [], isLoading: contactsLoading } = useConversationContacts(businessId);
   const { data: messages = [], isLoading: msgsLoading } = useConversation(selectedContactId, businessId);
   const { data: activeSeq } = useContactActiveSequence(selectedContactId);
@@ -247,7 +257,7 @@ export default function MessageQueuePage() {
 
   const filteredContacts = contacts.filter((c) => {
     if (search && !c.full_name.toLowerCase().includes(search.toLowerCase())) return false;
-    if (filter === "unread") return c.hasUnread;
+    if (filter === "unread") return c.hasUnread && !seenIds.has(c.id);
     return true;
   });
 
@@ -257,7 +267,7 @@ export default function MessageQueuePage() {
     }
   }, [allMessages]);
 
-  // Auto-select first contact on desktop only
+  // Auto-select first contact on desktop only (don't add to seenIds — user hasn't explicitly opened it)
   useEffect(() => {
     if (!selectedContactId && contacts.length > 0 && window.innerWidth >= 768) {
       setSelectedContactId(contacts[0].id);
@@ -326,7 +336,7 @@ export default function MessageQueuePage() {
                     className={`w-full text-left px-4 py-4 flex items-center gap-3 overflow-x-hidden hover:bg-secondary/50 active:bg-secondary transition-colors border-b border-border/50 ${
                       selectedContactId === c.id ? "bg-secondary" : ""
                     }`}
-                    onClick={() => setSelectedContactId(c.id)}
+                    onClick={() => selectContact(c.id)}
                   >
                     <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                       {(() => {
@@ -343,18 +353,18 @@ export default function MessageQueuePage() {
                     </div>
                     <div className="flex-1 min-w-0 overflow-hidden max-w-full">
                       <div className="flex items-baseline justify-between gap-2">
-                        <p className={`text-base min-w-0 overflow-hidden text-ellipsis whitespace-nowrap ${c.hasUnread ? "font-bold" : "font-semibold"}`}>
+                        <p className={`text-base min-w-0 overflow-hidden text-ellipsis whitespace-nowrap ${c.hasUnread && !seenIds.has(c.id) ? "font-bold" : "font-semibold"}`}>
                           {c.full_name}
                         </p>
                         <span className="text-xs text-muted-foreground shrink-0">
                           {formatDistanceToNow(new Date(c.lastMessageAt), { addSuffix: false })}
                         </span>
                       </div>
-                      <p className={`text-sm min-w-0 overflow-hidden text-ellipsis whitespace-nowrap mt-0.5 ${c.hasUnread ? "text-foreground font-medium" : "text-muted-foreground"}`}>
+                      <p className={`text-sm min-w-0 overflow-hidden text-ellipsis whitespace-nowrap mt-0.5 ${c.hasUnread && !seenIds.has(c.id) ? "text-foreground font-medium" : "text-muted-foreground"}`}>
                         {c.lastMessage}
                       </p>
                     </div>
-                    {c.hasUnread && (
+                    {c.hasUnread && !seenIds.has(c.id) && (
                       <div className="w-2.5 h-2.5 rounded-full bg-primary shrink-0" />
                     )}
                   </button>

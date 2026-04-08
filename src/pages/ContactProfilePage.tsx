@@ -202,7 +202,7 @@ export default function ContactProfilePage() {
           <Button variant="outline" size="icon" className="shrink-0" onClick={() => setEditOpen(true)}>
             <Pencil className="w-4 h-4" />
           </Button>
-          <Button variant="outline" size="icon" className="shrink-0" onClick={() => setSmsDialogOpen(true)}>
+          <Button variant="outline" size="icon" className="shrink-0" onClick={() => navigate("/messages", { state: { contactId: contact.id } })}>
             <MessageSquare className="w-4 h-4" />
           </Button>
         </div>
