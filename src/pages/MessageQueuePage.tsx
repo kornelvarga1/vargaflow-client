@@ -72,7 +72,7 @@ function useConversationContacts(businessId: string | undefined) {
 
       const { data: contacts, error: contactsError } = await supabase
         .from("contacts")
-        .select("id, full_name, phone, pipeline, stage")
+        .select("id, full_name, phone, pipeline, stage, last_read_at")
         .eq("business_id", businessId!)
         .in("id", contactIds);
 
@@ -103,15 +103,12 @@ function useConversationContacts(businessId: string | undefined) {
           stage: contact.stage,
           lastMessage: (latest.direction === "outbound" ? "You: " : "") + latest.message_content,
           lastMessageAt: latest.sent_at || latest.scheduled_at,
-          hasUnread: (() => {
-            const lastRead = localStorage.getItem(`msg_lastRead_${contact.id}`);
-            return msgs.some(
-              (m) =>
-                m.direction === "inbound" &&
-                m.status === "received" &&
-                (!lastRead || new Date(m.created_at) > new Date(lastRead))
-            );
-          })(),
+          hasUnread: msgs.some(
+            (m) =>
+              m.direction === "inbound" &&
+              m.status === "received" &&
+              (!contact.last_read_at || new Date(m.created_at) > new Date(contact.last_read_at))
+          ),
           messageCount: msgs.length,
         });
       }
@@ -202,18 +199,20 @@ export default function MessageQueuePage() {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<FilterType>("all");
   const { data: businessId } = useBusinessId();
+  const qc = useQueryClient();
 
   const selectContact = (id: string) => {
     setSelectedContactId(id);
     setSeenIds((prev) => new Set([...prev, id]));
-    localStorage.setItem(`msg_lastRead_${id}`, new Date().toISOString());
+    supabase.from("contacts").update({ last_read_at: new Date().toISOString() }).eq("id", id).then(() => {
+      qc.invalidateQueries({ queryKey: ["conversation_contacts"] });
+    });
   };
   const { data: contacts = [], isLoading: contactsLoading } = useConversationContacts(businessId);
   const { data: messages = [], isLoading: msgsLoading } = useConversation(selectedContactId, businessId);
   const { data: activeSeq } = useContactActiveSequence(selectedContactId);
   const [optimisticMessages, setOptimisticMessages] = useState<Message[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const qc = useQueryClient();
   const { setConversationOpen } = useConversationOpen();
 
   useEffect(() => {
