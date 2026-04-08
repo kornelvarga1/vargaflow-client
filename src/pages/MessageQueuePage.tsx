@@ -101,7 +101,7 @@ function useConversationContacts(businessId: string | undefined) {
           phone: contact.phone,
           pipeline: contact.pipeline,
           stage: contact.stage,
-          lastMessage: latest.message_content,
+          lastMessage: (latest.direction === "outbound" ? "You: " : "") + latest.message_content,
           lastMessageAt: latest.sent_at || latest.scheduled_at,
           hasUnread: msgs.some((m) => m.direction === "inbound" && m.status === "received"),
           messageCount: msgs.length,
