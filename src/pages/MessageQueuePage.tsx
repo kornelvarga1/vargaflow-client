@@ -186,7 +186,7 @@ function useContactActiveSequence(contactId: string | null) {
   });
 }
 
-type FilterType = "all" | "unread" | "sent";
+type FilterType = "all" | "unread";
 
 // --- Main Component ---
 
@@ -310,7 +310,7 @@ export default function MessageQueuePage() {
               />
             </div>
             <div className="flex gap-1">
-              {(["all", "unread", "sent"] as FilterType[]).map((f) => (
+              {(["all", "unread"] as FilterType[]).map((f) => (
                 <Button
                   key={f}
                   variant={filter === f ? "default" : "ghost"}
@@ -318,7 +318,7 @@ export default function MessageQueuePage() {
                   className="h-8 text-sm flex-1"
                   onClick={() => setFilter(f)}
                 >
-                  {f === "all" ? "All" : f === "unread" ? "Unread" : "Sent Only"}
+                  {f === "all" ? "All" : "Unread"}
                 </Button>
               ))}
             </div>
