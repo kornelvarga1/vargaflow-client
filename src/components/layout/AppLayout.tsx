@@ -65,7 +65,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             className="absolute inset-0 bg-background/60 backdrop-blur-sm"
             onClick={() => setMobileMenuOpen(false)}
           />
-          <aside className="relative w-64 bg-sidebar border-r border-border flex flex-col animate-slide-in-right">
+          <aside className="relative w-64 bg-sidebar border-r border-border flex flex-col animate-slide-in-left">
             <div className="flex items-center justify-between px-5 py-4 border-b border-border">
               <div className="flex items-center gap-2">
                 <Zap className="w-4 h-4 text-primary shrink-0" />
@@ -101,6 +101,15 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
       {/* Mobile bottom nav — hidden when a conversation is open */}
       <nav className={`md:hidden fixed bottom-0 left-0 right-0 z-40 flex border-t border-border glass safe-bottom ${isConversationOpen ? "hidden" : ""}`}>
+        <button
+          onClick={() => setMobileMenuOpen(true)}
+          className="flex-1 flex flex-col items-center gap-0.5 py-2 text-[10px] font-medium text-muted-foreground active-press"
+        >
+          <div className="p-1">
+            <Menu className="w-4 h-4" />
+          </div>
+          <span>More</span>
+        </button>
         {mobileNavItems.map((item) => {
           const isActive =
             item.to === "/"
@@ -121,15 +130,6 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             </NavLink>
           );
         })}
-        <button
-          onClick={() => setMobileMenuOpen(true)}
-          className="flex-1 flex flex-col items-center gap-0.5 py-2 text-[10px] font-medium text-muted-foreground active-press"
-        >
-          <div className="p-1">
-            <Menu className="w-4 h-4" />
-          </div>
-          <span>More</span>
-        </button>
       </nav>
 
       {/* Main content */}
