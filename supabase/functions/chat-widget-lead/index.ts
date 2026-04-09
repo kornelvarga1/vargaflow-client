@@ -80,12 +80,12 @@ Deno.serve(async (req) => {
       ),
     });
 
-    // Message 2 to contact — 40 seconds
+    // Message 2 to contact — 2 minutes
     const tpl2 = await fetchClientTemplate(supabase, "chat-widget-lead", "sms2", business_id);
     await scheduleContactSMS(supabase, {
       contact_id: contact.id,
       business_id,
-      delaySeconds: 40,
+      delaySeconds: 120,
       content: resolveClientTemplate(
         tpl2?.content ?? `*thanks for reaching out. Sorry I haven't had enough coffee today haha. By the way, if you have any other questions in the meantime, feel free to message me here.`,
         vars,
