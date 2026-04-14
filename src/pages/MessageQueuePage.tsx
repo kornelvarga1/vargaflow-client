@@ -4,7 +4,6 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { useBusinessId } from "@/hooks/useBusinessId";
 import { useCustomValues, replaceCustomValues } from "@/hooks/useCustomValues";
-import { SALES_STAGES, ONBOARDING_STAGES } from "@/hooks/useContacts";
 import { useConversationOpen } from "@/context/ConversationContext";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -21,11 +20,6 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { format, formatDistanceToNow } from "date-fns";
-
-const ALL_STAGES = [
-  ...SALES_STAGES.map((s) => ({ ...s, pipeline: "Sales" })),
-  ...ONBOARDING_STAGES.map((s) => ({ ...s, pipeline: "Onboarding" })),
-];
 
 type ConversationContact = {
   id: string;
@@ -282,9 +276,6 @@ export default function MessageQueuePage() {
     }
   }, [contacts, selectedContactId]);
 
-  const stageLabel = (key: string, pipeline: string) =>
-    ALL_STAGES.find((s) => s.key === key && s.pipeline === pipeline)?.label || key;
-
   return (
     <div className="flex flex-1 min-h-0 overflow-hidden animate-fade-in">
       {/* Left Panel: Contact List */}
@@ -441,20 +432,14 @@ export default function MessageQueuePage() {
                     </Link>
                   </div>
                   {/* Row 2: tags */}
-                  <div className="flex items-center gap-1.5 flex-wrap pl-1">
-                    <Badge variant="outline" className="text-xs border-primary/40 text-primary">
-                      {selectedContact.pipeline === "Onboarding" ? "Onboarding" : "Sales"}
-                    </Badge>
-                    <Badge variant="secondary" className="text-xs">
-                      {stageLabel(selectedContact.stage, selectedContact.pipeline)}
-                    </Badge>
-                    {activeSeq && (
+                  {activeSeq && (
+                    <div className="flex items-center gap-1.5 flex-wrap pl-1">
                       <Badge variant="default" className="text-xs">
                         <Zap className="w-3 h-3 mr-0.5" />
                         {(activeSeq as any).sequences?.name || "Sequence"} — Step {activeSeq.current_step}
                       </Badge>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
               )}
 

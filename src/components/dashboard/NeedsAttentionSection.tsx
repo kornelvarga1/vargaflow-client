@@ -1,8 +1,8 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { useBusinessId } from "@/hooks/useBusinessId";
-import { SALES_STAGES, ONBOARDING_STAGES } from "@/hooks/useContacts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -17,11 +17,6 @@ import {
   Loader2,
 } from "lucide-react";
 import { differenceInDays, formatDistanceToNow } from "date-fns";
-
-const ALL_STAGES = [
-  ...SALES_STAGES.map((s) => ({ ...s, pipeline: "Sales" })),
-  ...ONBOARDING_STAGES.map((s) => ({ ...s, pipeline: "Onboarding" })),
-];
 
 interface AttentionItem {
   id: string;
@@ -84,13 +79,12 @@ function useNeedsAttention() {
           // Skip if already in no_show list
           if (c.stage === "No Showed to Zoom") continue;
 
-          const stageLabel = ALL_STAGES.find((s) => s.key === c.stage && s.pipeline === c.pipeline)?.label || c.stage;
           items.push({
             id: `stale-${c.id}`,
             contactId: c.id,
             contactName: c.full_name,
             type: "stale",
-            description: `Stuck in "${stageLabel}" for ${days} days`,
+            description: `No activity for ${days} days`,
             timestamp: c.stage_entered_at,
           });
         }
@@ -151,8 +145,11 @@ const typeLabel: Record<string, string> = {
   replied: "Replied",
 };
 
+const COLLAPSED_COUNT = 3;
+
 export default function NeedsAttentionSection() {
   const { data: items = [], isLoading } = useNeedsAttention();
+  const [expanded, setExpanded] = useState(false);
 
   if (isLoading) {
     return (
@@ -163,6 +160,9 @@ export default function NeedsAttentionSection() {
       </Card>
     );
   }
+
+  const visible = expanded ? items : items.slice(0, COLLAPSED_COUNT);
+  const hiddenCount = items.length - COLLAPSED_COUNT;
 
   return (
     <Card className="bg-card border-border shadow-card">
@@ -185,7 +185,7 @@ export default function NeedsAttentionSection() {
           </div>
         ) : (
           <div className="space-y-2">
-            {items.map((item) => {
+            {visible.map((item) => {
               const config = typeConfig[item.type] || typeConfig.stale;
               const Icon = config.icon;
               return (
@@ -213,6 +213,16 @@ export default function NeedsAttentionSection() {
                 </div>
               );
             })}
+            {hiddenCount > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full text-xs text-muted-foreground"
+                onClick={() => setExpanded(!expanded)}
+              >
+                {expanded ? "Show less" : `View all (${hiddenCount} more)`}
+              </Button>
+            )}
           </div>
         )}
       </CardContent>

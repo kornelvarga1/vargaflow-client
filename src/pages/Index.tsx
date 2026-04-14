@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import NeedsAttentionSection from "@/components/dashboard/NeedsAttentionSection";
 import { useDashboardStats } from "@/hooks/useDashboardStats";
@@ -5,13 +6,13 @@ import { useActivityLog } from "@/hooks/useActivityLog";
 import { useBusinessSettings } from "@/hooks/useBusinessSettings";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/ui/button";
 import {
   Users,
   MessageSquare,
   UserPlus,
   ArrowRightLeft,
   Send,
-  Star,
   Clock,
   ArrowRight,
   Loader2,
@@ -28,7 +29,8 @@ const activityIcons: Record<string, typeof Activity> = {
 
 export default function Index() {
   const { data: stats, isLoading: statsLoading } = useDashboardStats();
-  const { data: activities = [], isLoading: actLoading } = useActivityLog(15);
+  const { data: activities = [], isLoading: actLoading } = useActivityLog(50);
+  const [activityCount, setActivityCount] = useState(8);
   const { data: bizSettings } = useBusinessSettings();
   const firstName = bizSettings?.my_name?.split(" ")[0] || "";
 
@@ -48,7 +50,7 @@ export default function Index() {
           <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 md:gap-4 stagger-in">
+        <div className="grid grid-cols-3 gap-3 md:gap-4 stagger-in">
           <StatCard icon={UserPlus} label="New Leads This Week" value={stats?.newLeadsThisWeek ?? 0} to="/contacts" />
           <StatCard
             icon={MessageSquare}
@@ -57,8 +59,7 @@ export default function Index() {
             to="/messages"
             highlight={!!stats?.unreadMessages}
           />
-          <StatCard icon={Users} label="Contacts in Pipeline" value={stats?.contactsInPipeline ?? 0} to="/contacts" />
-          <StatCard icon={Star} label="Reviews Collected" value={stats?.reviewsCollected ?? 0} to="/contacts" />
+          <StatCard icon={Send} label="Messages Sent This Week" value={stats?.messagesSentThisWeek ?? 0} to="/messages" />
         </div>
       )}
 
@@ -82,7 +83,7 @@ export default function Index() {
             </p>
           ) : (
             <div className="space-y-3">
-              {activities.map((a) => {
+              {activities.slice(0, activityCount).map((a) => {
                 const Icon = activityIcons[a.activity_type] || Activity;
                 return (
                   <div key={a.id} className="flex items-start gap-3">
@@ -103,6 +104,16 @@ export default function Index() {
                   </div>
                 );
               })}
+              {activities.length > activityCount && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full text-xs text-muted-foreground"
+                  onClick={() => setActivityCount((c) => c + 8)}
+                >
+                  Show more ({activities.length - activityCount} remaining)
+                </Button>
+              )}
             </div>
           )}
         </CardContent>

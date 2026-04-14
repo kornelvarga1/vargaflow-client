@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { useBusinessId } from "@/hooks/useBusinessId";
-import { useUpdateContact, SALES_STAGES, ONBOARDING_STAGES, type Contact } from "@/hooks/useContacts";
+import { useUpdateContact, type Contact } from "@/hooks/useContacts";
 import { logActivity } from "@/hooks/useActivityLog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -36,16 +36,6 @@ import {
 import ContactFormDialog from "@/components/contacts/ContactFormDialog";
 import { toast } from "sonner";
 import { format, formatDistanceToNow } from "date-fns";
-
-const ALL_STAGES = [
-  ...SALES_STAGES.map((s) => ({ ...s, pipeline: "Sales" as const })),
-  ...ONBOARDING_STAGES.map((s) => ({ ...s, pipeline: "Onboarding" as const })),
-];
-
-function getStageLabel(key: string, pipeline?: string) {
-  const match = ALL_STAGES.find((s) => s.key === key && (!pipeline || s.pipeline === pipeline));
-  return match?.label || key;
-}
 
 // --- Hooks ---
 
@@ -151,9 +141,6 @@ export default function ContactProfilePage() {
     );
   }
 
-  const stageLabel = getStageLabel(contact.stage, contact.pipeline);
-  const pipelineLabel = contact.pipeline === "Onboarding" ? "Onboarding" : "Sales";
-
   // Merge activities and sent messages into a unified timeline
   const timeline = [
     ...activities.map((a: any) => ({
@@ -205,13 +192,6 @@ export default function ContactProfilePage() {
           <Button variant="outline" size="icon" className="shrink-0" onClick={() => navigate("/messages", { state: { contactId: contact.id } })}>
             <MessageSquare className="w-4 h-4" />
           </Button>
-        </div>
-        {/* Row 2: pipeline + stage tags */}
-        <div className="flex items-center gap-2 pl-1 flex-wrap">
-          <Badge variant="outline" className="border-primary/40 text-primary">
-            {pipelineLabel}
-          </Badge>
-          <Badge variant="secondary">{stageLabel}</Badge>
         </div>
       </div>
 

@@ -13,10 +13,12 @@ export function useActivityLog(limit = 20) {
   return useQuery({
     queryKey: ["activity_log", limit, businessId],
     queryFn: async () => {
+      const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
       const { data, error } = await supabase
         .from("activity_log")
         .select("*, contacts(full_name)")
         .eq("business_id", businessId!)
+        .gte("created_at", oneWeekAgo)
         .order("created_at", { ascending: false })
         .limit(limit);
       if (error) throw error;

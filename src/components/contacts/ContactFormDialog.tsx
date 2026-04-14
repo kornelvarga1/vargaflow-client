@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useCreateContact, useUpdateContact, SALES_STAGES, ONBOARDING_STAGES, LEAD_SOURCES, type Contact, type ContactInsert } from "@/hooks/useContacts";
+import { useCreateContact, useUpdateContact, LEAD_SOURCES, type Contact, type ContactInsert } from "@/hooks/useContacts";
 import { useStopContactSequences } from "@/hooks/useSequences";
 import { logActivity } from "@/hooks/useActivityLog";
 import { MessageSquareOff } from "lucide-react";
@@ -140,17 +140,7 @@ export default function ContactFormDialog({ open, onOpenChange, contact, default
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
-              <Label>Stage</Label>
-              <Select value={form.stage} onValueChange={(v) => set("stage", v)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {(form.pipeline === "Onboarding" ? ONBOARDING_STAGES : SALES_STAGES).map((s) => (
-                    <SelectItem key={s.key} value={s.key}>{s.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <div />
           </div>
           <div className="space-y-2">
             <Label>Notes</Label>

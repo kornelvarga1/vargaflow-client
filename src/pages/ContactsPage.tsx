@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useContacts, useDeleteContact, SALES_STAGES, LEAD_SOURCES, type Contact } from "@/hooks/useContacts";
+import { useContacts, useDeleteContact, LEAD_SOURCES, type Contact } from "@/hooks/useContacts";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -24,8 +24,6 @@ export default function ContactsPage() {
       (c.email?.toLowerCase().includes(search.toLowerCase())) ||
       (c.phone?.includes(search))
   );
-
-  const stageLabel = (key: string) => SALES_STAGES.find((s) => s.key === key)?.label || key;
 
   const handleDelete = async (c: Contact) => {
     try {
@@ -103,9 +101,6 @@ export default function ContactsPage() {
                 </div>
                 <Badge variant="secondary" className="hidden sm:inline-flex text-xs shrink-0">
                   {c.lead_source}
-                </Badge>
-                <Badge variant="outline" className="hidden sm:inline-flex text-xs shrink-0 border-accent/40 text-accent-foreground">
-                  {stageLabel(c.stage)}
                 </Badge>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
