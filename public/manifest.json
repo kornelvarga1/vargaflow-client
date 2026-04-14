@@ -1,6 +1,6 @@
 {
-  "name": "VargaFlow",
-  "short_name": "VargaFlow",
+  "name": "VargaFlow Client",
+  "short_name": "VargaFlow Client",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

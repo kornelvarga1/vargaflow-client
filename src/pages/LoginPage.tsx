@@ -50,7 +50,7 @@ export default function LoginPage() {
         <div className="flex flex-col items-center gap-3">
           <img src="/favicon.png" alt="VargaFlow" className="w-12 h-12 rounded-xl" />
           <div className="text-center">
-            <h1 className="text-2xl font-display font-bold text-primary">VargaFlow</h1>
+            <h1 className="text-2xl font-display font-bold text-primary">VargaFlow Client</h1>
             <p className="text-sm text-muted-foreground mt-1">Sign in to your account</p>
           </div>
         </div>
