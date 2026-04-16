@@ -88,12 +88,12 @@ Deno.serve(async (req) => {
       ),
     });
 
-    // Message 2 to contact — 60 seconds
+    // Message 2 to contact — 90 seconds (past next cron tick to guarantee order)
     const tpl2 = await fetchClientTemplate(supabase, "form-submission-confirmation", "sms2", business_id);
     await scheduleContactSMS(supabase, {
       contact_id: contact.id,
       business_id,
-      delaySeconds: 60,
+      delaySeconds: 90,
       content: resolveClientTemplate(
         tpl2?.content ?? `I will be in touch shortly. Sorry I haven't had enough coffee today. Talk soon.`,
         vars,
