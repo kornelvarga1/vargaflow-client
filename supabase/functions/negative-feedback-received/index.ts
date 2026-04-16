@@ -2,7 +2,7 @@
  * negative-feedback-received
  *
  * Trigger: POST webhook when a review survey is submitted with 1–3 star rating
- * Payload: { business_id, contact_id, contact_first_name, contact_phone, star_rating, feedback_text }
+ * Payload: { business_id, contact_id, contact_first_name, contact_phone?, contact_email?, star_rating, feedback_text }
  *
  * Settings columns used: my_name, my_phone, twilio_phone_number
  */
@@ -26,12 +26,13 @@ Deno.serve(async (req) => {
       business_id: string;
       contact_id: string | null;
       contact_first_name: string;
-      contact_phone: string | null;
+      contact_phone?: string | null;
+      contact_email?: string | null;
       star_rating: number;
       feedback_text: string;
     };
 
-    const { business_id, contact_id, contact_first_name, contact_phone, star_rating, feedback_text } = body;
+    const { business_id, contact_id, contact_first_name, contact_phone, contact_email, star_rating, feedback_text } = body;
 
     const supabase = getSupabaseAdmin();
     const settings = await fetchSettings(supabase, business_id);
@@ -48,7 +49,7 @@ Deno.serve(async (req) => {
         business_id,
         delaySeconds: 0,
         content:
-          `Hey ${settings.my_name}, heads up — ${contact_first_name}${contact_phone ? ` (${contact_phone})` : ""} attempted to leave a negative review (${star_rating} stars or lower). We have blocked it from showing on your public page. Here is their feedback: ${feedback_text} (Do not reply to this message - not the client)`,
+          `Hey ${settings.my_name}, heads up — ${contact_first_name}${contact_email ? ` (${contact_email})` : contact_phone ? ` (${contact_phone})` : ""} attempted to leave a negative review (${star_rating} stars or lower). We have blocked it from showing on your public page. Here is their feedback: ${feedback_text} (Do not reply to this message - not the client)`,
       });
     }
 
