@@ -124,6 +124,11 @@ INSERT INTO client_sequence_templates (flow_name, step_name, message_type, conte
   'Hey {{first_name}}, I am running an anniversary special giving {{discount_amount}}. It''s only for the first 6 days — so if you''re interested or know someone who might be, just tap this link: {{website_url}}/getyourdiscount {{my_name}} from {{company_name}}',
   0, NULL),
 
+-- ── discount-form-submission ───────────────────────────────
+('discount-form-submission', 'sms1', 'sms',
+  'Hey {{first_name}}, just got your discounted job request. I will be in touch shortly and get you that discount. {{my_name}} from {{company_name}}',
+  120, NULL),
+
 -- ── chat-widget-lead ───────────────────────────────────────
 ('chat-widget-lead', 'sms1', 'sms',
   'Hey {{first_name}}, just got your text through my web chat. Thanks for reaching out 😊 I will be in touch as soon as I am free. — {{my_name}}, {{company_name}}',

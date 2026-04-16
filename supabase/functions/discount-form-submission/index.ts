@@ -10,10 +10,12 @@
 import {
   addTag,
   corsHeaders,
+  fetchClientTemplate,
   fetchSettings,
   getFirstName,
   getSupabaseAdmin,
   jsonResponse,
+  resolveClientTemplate,
   scheduleContactSMS,
   scheduleOwnerSMS,
   upsertContact,
@@ -61,13 +63,22 @@ Deno.serve(async (req) => {
         `Hey ${settings.my_name}, ${contact_first_name} just filled out your disc form on the website. Info: Name: ${contact_name}, Phone: ${contact_phone}, Message: ${message}. We have told them you will be reaching out soon. (Do not reply to this message - not the client)`,
     });
 
+    const vars = {
+      first_name: contact_first_name,
+      my_name: settings.my_name ?? "",
+      company_name: settings.company_name ?? "",
+    };
+
     // SMS to contact — 2 minutes
+    const tpl1 = await fetchClientTemplate(supabase, "discount-form-submission", "sms1", business_id);
     await scheduleContactSMS(supabase, {
       contact_id,
       business_id,
       delaySeconds: 120,
-      content:
-        `Hey ${contact_first_name}, just got your discounted job request. I will be in touch shortly and get you that discount. ${settings.my_name} from ${settings.company_name}`,
+      content: resolveClientTemplate(
+        tpl1?.content ?? `Hey {{first_name}}, just got your discounted job request. I will be in touch shortly and get you that discount. {{my_name}} from {{company_name}}`,
+        vars,
+      ),
     });
 
     return jsonResponse({ success: true });

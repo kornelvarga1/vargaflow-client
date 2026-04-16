@@ -70,6 +70,18 @@ Deno.serve(async (req) => {
 
     const supabase = getSupabaseAdmin();
 
+    // Dedup: check if we already processed this call (Twilio can fire multiple status callbacks)
+    const CallSid = get("CallSid");
+    if (CallSid) {
+      const { error: dupError } = await supabase
+        .from("processed_webhooks")
+        .insert({ event_id: `missed-call-${CallSid}` });
+      if (dupError) {
+        console.log(`[missed-call-text-back] Already processed CallSid=${CallSid}, skipping`);
+        return jsonResponse({ skipped: true, reason: "duplicate callback" });
+      }
+    }
+
     // Resolve business_id: prefer query param, otherwise look up by Twilio phone number
     const urlParams = new URL(req.url).searchParams;
     let business_id = urlParams.get("business_id") ?? "";
