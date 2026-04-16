@@ -38,6 +38,9 @@ Deno.serve(async (req) => {
     };
 
     const { contact_name, contact_phone, message, business_id } = body;
+    if (!business_id || !contact_name || !contact_phone) {
+      return jsonResponse({ error: "Missing required fields: business_id, contact_name, contact_phone" }, 400);
+    }
 
     const supabase = getSupabaseAdmin();
     const settings = await fetchSettings(supabase, business_id);

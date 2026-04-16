@@ -26,6 +26,8 @@ import {
   scheduleOwnerSMS,
 } from "../_shared/helpers.ts";
 
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+
 type Payload = {
   business_id: string;
   contact_id: string;
@@ -70,7 +72,7 @@ Deno.serve(async (req) => {
       ...overrides,
     });
 
-    const reviewLink = `https://zfmchywjmgykmlhjihls.supabase.co/functions/v1/review-link-clicked?contact_id=${contact_id}&business_id=${business_id}`;
+    const reviewLink = `${SUPABASE_URL}/functions/v1/review-link-clicked?contact_id=${contact_id}&business_id=${business_id}`;
     const reviewVars = {
       first_name: contact_first_name,
       my_name: my_name ?? "",
@@ -196,7 +198,7 @@ Deno.serve(async (req) => {
         contact_id,
         delaySeconds: 0,
         content:
-          `Hey ${my_name}, we have attempted to get ${contact_first_name} to leave you a review 4 times over the course of the last month. Try to get in touch with them directly to leave your review — they will have the link in their text messages. Here is your direct review link again: https://zfmchywjmgykmlhjihls.supabase.co/functions/v1/review-link-clicked?contact_id=${contact_id}&business_id=${business_id}`,
+          `Hey ${my_name}, we have attempted to get ${contact_first_name} to leave you a review 4 times over the course of the last month. Try to get in touch with them directly to leave your review — they will have the link in their text messages. Here is your direct review link again: ${SUPABASE_URL}/functions/v1/review-link-clicked?contact_id=${contact_id}&business_id=${business_id}`,
       });
     } else {
       console.warn(`[review-request-sequence] Unknown step: ${step}`);
