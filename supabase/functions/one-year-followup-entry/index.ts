@@ -42,7 +42,7 @@ Deno.serve(async (req) => {
     console.log("[one-year-followup-entry] received body:", JSON.stringify(body));
 
     const { business_id, contact_first_name } = body;
-    let contact_phone = body.contact_phone;
+    const contact_phone = body.contact_phone;
     let contact_id = body.contact_id;
 
     if (!business_id) throw new Error("Missing required field: business_id");
