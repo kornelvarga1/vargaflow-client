@@ -134,7 +134,7 @@ export default function SettingsPage() {
       <Card className="bg-card border-border shadow-card">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base font-display">
-            <Moon className="w-4 h-4 text-accent-foreground" />
+            <Moon className="w-4 h-4 text-foreground" />
             Appearance
           </CardTitle>
         </CardHeader>
@@ -158,7 +158,7 @@ export default function SettingsPage() {
       <Card className="bg-card border-border shadow-card">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base font-display">
-            <Bell className="w-4 h-4 text-accent-foreground" />
+            <Bell className="w-4 h-4 text-foreground" />
             Push Notifications
           </CardTitle>
         </CardHeader>
@@ -209,7 +209,7 @@ export default function SettingsPage() {
       <Card className="bg-card border-border shadow-card">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base font-display">
-            <Settings className="w-4 h-4 text-accent-foreground" />
+            <Settings className="w-4 h-4 text-foreground" />
             General Information
           </CardTitle>
         </CardHeader>
