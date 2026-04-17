@@ -68,7 +68,6 @@ export default function KanbanBoard({ title, subtitle, addLabel, pipeline, stage
     "No Contact → Long Term Nurture": "flow-long-term-nurture",
     "No Showed to Zoom": "flow-no-show",
     "Cancelled/Rescheduled": "flow-cancelled",
-    "Client Closed": "flow-client-closed",
     "New Client Waiting for Onboarding Form": "flow-ob-client-signup",
     "Project Ready to Start": "flow-ob-project-ready",
   };

@@ -23,6 +23,7 @@ import {
   resolveClientTemplate,
   scheduleContactSMS,
   upsertContact,
+  validateTwilioSignature,
 } from "../_shared/helpers.ts";
 
 const MISSED_STATUSES = new Set(["busy", "canceled", "voicemail", "no-answer", "completed"]);
@@ -42,6 +43,19 @@ Deno.serve(async (req) => {
     // Twilio sends application/x-www-form-urlencoded, not JSON
     const formData = await req.formData();
     const get = (key: string) => formData.get(key)?.toString() ?? "";
+
+    // Validate Twilio signature — public endpoint (verify_jwt=false).
+    const paramObj: Record<string, string> = {};
+    for (const [k, v] of formData.entries()) {
+      if (typeof v === "string") paramObj[k] = v;
+    }
+    const authToken = Deno.env.get("TWILIO_AUTH_TOKEN") ?? "";
+    const signature = req.headers.get("X-Twilio-Signature");
+    const valid = await validateTwilioSignature(authToken, signature, req.url, paramObj);
+    if (!valid) {
+      console.warn("[missed-call-text-back] invalid Twilio signature — rejecting");
+      return new Response("Forbidden", { status: 403 });
+    }
 
     const To = get("To");
     const From = get("From");

@@ -34,13 +34,20 @@ export async function upsertContact(
     lead_source?: string;
   },
 ) {
+  // Normalize to E.164 so lookups match the stored format (migration
+  // 20260417200000 normalized existing rows + added unique constraint).
+  const normalizedPhone = normalizePhone(params.phone);
+  if (!normalizedPhone) {
+    throw new Error(`upsertContact: phone "${params.phone}" could not be normalized`);
+  }
+
   // Use explicit select → update/insert instead of .upsert() because our unique
   // index on (phone, business_id) is a PARTIAL index (WHERE NOT NULL), which
   // PostgreSQL's ON CONFLICT column inference does not support via the JS client.
   const { data: existing } = await supabase
     .from("contacts")
     .select("id")
-    .eq("phone", params.phone)
+    .eq("phone", normalizedPhone)
     .eq("business_id", params.business_id)
     .maybeSingle();
 
@@ -64,7 +71,7 @@ export async function upsertContact(
     .from("contacts")
     .insert({
       full_name: params.full_name,
-      phone: params.phone,
+      phone: normalizedPhone,
       email: params.email ?? null,
       business_id: params.business_id,
       lead_source: params.lead_source ?? "Other",
@@ -237,6 +244,47 @@ export async function sendIGMessage(
 
 export function getFirstName(fullName: string): string {
   return fullName.trim().split(/\s+/)[0] ?? fullName;
+}
+
+// Validate Twilio X-Twilio-Signature per https://www.twilio.com/docs/usage/security.
+// Must be called at the entry of any endpoint Twilio POSTs to (missed-call-
+// text-back, any future Twilio webhook). Returns false on mismatch, missing
+// signature, or missing auth token.
+export async function validateTwilioSignature(
+  authToken: string,
+  signature: string | null,
+  url: string,
+  params: Record<string, string>,
+): Promise<boolean> {
+  if (!authToken || !signature) return false;
+  const sortedKeys = Object.keys(params).sort();
+  let payload = url;
+  for (const k of sortedKeys) payload += k + params[k];
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(authToken),
+    { name: "HMAC", hash: "SHA-1" },
+    false,
+    ["sign"],
+  );
+  const sigBytes = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(payload));
+  const expected = btoa(String.fromCharCode(...new Uint8Array(sigBytes)));
+  if (expected.length !== signature.length) return false;
+  let diff = 0;
+  for (let i = 0; i < expected.length; i++) diff |= expected.charCodeAt(i) ^ signature.charCodeAt(i);
+  return diff === 0;
+}
+
+// Normalize phone to E.164 ("+1XXXXXXXXXX" for US/CA, "+..." for international).
+// Returns null for empty, "Anonymous", or < 10 digits — prevents garbage rows.
+// Must match the DB migration's logic exactly so inserts don't collide with
+// existing normalized rows.
+export function normalizePhone(phone: string | null | undefined): string | null {
+  if (!phone) return null;
+  const digits = phone.replace(/[^0-9]/g, "");
+  if (digits.length === 10) return "+1" + digits;
+  if (digits.length >= 11) return "+" + digits;
+  return null;
 }
 
 // ── Client sequence template helpers ────────────────────────
