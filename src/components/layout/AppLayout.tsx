@@ -1,9 +1,32 @@
-import { ReactNode, useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
-import { LayoutDashboard, Users, Settings, MessageSquare, Menu, X, LogOut } from "lucide-react";
+import { LayoutDashboard, Users, Settings, MessageSquare, Menu, X, LogOut, WifiOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useConversationOpen } from "@/context/ConversationContext";
+
+function OfflineBanner() {
+  const [online, setOnline] = useState<boolean>(() =>
+    typeof navigator !== "undefined" ? navigator.onLine : true,
+  );
+  useEffect(() => {
+    const goOnline = () => setOnline(true);
+    const goOffline = () => setOnline(false);
+    window.addEventListener("online", goOnline);
+    window.addEventListener("offline", goOffline);
+    return () => {
+      window.removeEventListener("online", goOnline);
+      window.removeEventListener("offline", goOffline);
+    };
+  }, []);
+  if (online) return null;
+  return (
+    <div className="flex items-center justify-center gap-2 bg-amber-500 px-4 py-2 text-sm font-medium text-white shadow-sm">
+      <WifiOff className="h-4 w-4 shrink-0" />
+      <span>You're offline — data shown may be out of date.</span>
+    </div>
+  );
+}
 
 const navItems = [
   { to: "/", icon: LayoutDashboard, label: "Dashboard" },
@@ -21,7 +44,9 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const { isConversationOpen } = useConversationOpen();
 
   return (
-    <div className="flex h-dvh overflow-hidden">
+    <div className="flex flex-col h-dvh overflow-hidden">
+      <OfflineBanner />
+      <div className="flex flex-1 min-h-0 overflow-hidden">
       {/* Desktop Sidebar */}
       <aside className="hidden md:flex w-60 flex-col border-r border-border bg-sidebar shrink-0 border-t-[3px] border-t-primary">
         <div className="flex items-center gap-2 px-5 py-4 border-b border-border">
@@ -134,6 +159,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
       {/* Main content */}
       <main className={`flex-1 min-h-0 md:pb-0 ${isConversationOpen ? "overflow-hidden pb-0 flex flex-col" : "overflow-auto pb-20"}`}>{children}</main>
+      </div>
     </div>
   );
 }
