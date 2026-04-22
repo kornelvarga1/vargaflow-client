@@ -4,17 +4,12 @@ import NeedsAttentionSection from "@/components/dashboard/NeedsAttentionSection"
 import { useDashboardStats } from "@/hooks/useDashboardStats";
 import { useActivityLog } from "@/hooks/useActivityLog";
 import { useBusinessSettings } from "@/hooks/useBusinessSettings";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import {
   Users,
-  MessageSquare,
   UserPlus,
   ArrowRightLeft,
   Send,
-  Clock,
-  ArrowRight,
   Loader2,
   Activity,
 } from "lucide-react";
@@ -35,65 +30,76 @@ export default function Index() {
   const firstName = bizSettings?.my_name?.split(" ")[0] || "";
 
   return (
-    <div className="p-4 md:p-8 max-w-6xl mx-auto space-y-6 animate-slide-up">
-      <div>
-        <h1 className="text-3xl font-display font-bold">Dashboard</h1>
-        <p className="text-muted-foreground mt-1">
-          {firstName ? `Welcome back, ${firstName}!` : "Welcome back."}
+    <div className="px-4 md:px-6 pt-8 max-w-2xl mx-auto animate-slide-up">
+      <header className="px-1 mb-6">
+        <h1 className="font-serif text-3xl text-foreground">Dashboard</h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          {firstName ? `Welcome back, ${firstName}` : "Welcome back"}
         </p>
-      </div>
+      </header>
 
       <NeedsAttentionSection />
 
-      {statsLoading ? (
-        <div className="flex justify-center py-8">
-          <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-        </div>
-      ) : (
-        <div className="grid grid-cols-3 gap-3 md:gap-4 stagger-in">
-          <StatCard icon={UserPlus} label="New Leads This Week" value={stats?.newLeadsThisWeek ?? 0} to="/contacts" />
-          <StatCard
-            icon={MessageSquare}
-            label="Unread Messages"
-            value={stats?.unreadMessages ?? 0}
-            to="/messages"
-            highlight={!!stats?.unreadMessages}
-          />
-          <StatCard icon={Send} label="Messages Sent This Week" value={stats?.messagesSentThisWeek ?? 0} to="/messages" />
-        </div>
-      )}
+      {/* Stats — asymmetric: hero + 2 secondary */}
+      <div className="mt-5 space-y-3">
+        {statsLoading ? (
+          <div className="flex justify-center py-8">
+            <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+          </div>
+        ) : (
+          <>
+            <Link
+              to="/messages"
+              className="block bg-card border border-border/60 rounded-2xl px-5 py-6 hover:bg-secondary/20 transition-colors"
+            >
+              <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
+                Messages sent this week
+              </p>
+              <p className="font-serif text-5xl text-foreground tabular-nums leading-none mt-3">
+                {stats?.messagesSentThisWeek ?? 0}
+              </p>
+            </Link>
+            <div className="grid grid-cols-2 gap-3">
+              <SecondaryStat
+                label="New leads"
+                value={stats?.newLeadsThisWeek ?? 0}
+                to="/contacts"
+              />
+              <SecondaryStat
+                label="Unread"
+                value={stats?.unreadMessages ?? 0}
+                to="/messages"
+              />
+            </div>
+          </>
+        )}
+      </div>
 
-      {/* Activity Log */}
-      <Card className="bg-card border-border shadow-card">
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-base font-display">
-            <Clock className="w-4 h-4 text-accent-foreground" />
-            Recent Activity
-          </CardTitle>
-        </CardHeader>
-        <Separator />
-        <CardContent className="pt-4">
+      {/* Recent Activity */}
+      <section className="mt-8">
+        <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground px-1 mb-3">
+          Recent Activity
+        </p>
+        <div className="bg-card border border-border/60 rounded-2xl p-4">
           {actLoading ? (
             <div className="flex justify-center py-6">
               <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
             </div>
           ) : activities.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-6">
+            <p className="text-sm text-muted-foreground text-center py-4">
               No activity yet. Start by adding contacts.
             </p>
           ) : (
-            <div className="space-y-3">
+            <ul className="space-y-3">
               {activities.slice(0, activityCount).map((a) => {
                 const Icon = activityIcons[a.activity_type] || Activity;
                 return (
-                  <div key={a.id} className="flex items-start gap-3">
-                    <div className="w-7 h-7 rounded-full bg-secondary flex items-center justify-center shrink-0 mt-0.5">
-                      <Icon className="w-3.5 h-3.5 text-muted-foreground" />
-                    </div>
+                  <li key={a.id} className="flex items-start gap-3">
+                    <Icon className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" strokeWidth={1.5} />
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm">
+                      <p className="text-sm text-foreground/90 leading-snug">
                         {a.contacts?.full_name && (
-                          <span className="font-medium text-accent-foreground">{a.contacts.full_name}</span>
+                          <span className="font-medium text-foreground">{a.contacts.full_name}</span>
                         )}{" "}
                         {a.description}
                       </p>
@@ -101,58 +107,49 @@ export default function Index() {
                         {formatDistanceToNow(new Date(a.created_at), { addSuffix: true })}
                       </p>
                     </div>
-                  </div>
+                  </li>
                 );
               })}
-              {activities.length > activityCount && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="w-full text-xs text-muted-foreground"
-                  onClick={() => setActivityCount((c) => c + 8)}
-                >
-                  Show more ({activities.length - activityCount} remaining)
-                </Button>
-              )}
-            </div>
+            </ul>
           )}
-        </CardContent>
-      </Card>
+          {activities.length > activityCount && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full text-xs text-muted-foreground mt-2"
+              onClick={() => setActivityCount((c) => c + 8)}
+            >
+              Show more ({activities.length - activityCount} remaining)
+            </Button>
+          )}
+        </div>
+      </section>
+
+      <div className="h-12" />
     </div>
   );
 }
 
-function StatCard({
-  icon: Icon,
+function SecondaryStat({
   label,
   value,
   to,
-  highlight,
 }: {
-  icon: typeof Users;
   label: string;
   value: number;
   to: string;
-  highlight?: boolean;
 }) {
   return (
-    <Link to={to}>
-      <Card
-        className={`bg-card border-border shadow-card hover:shadow-glow transition-shadow cursor-pointer group ${
-          highlight ? "border-accent/50" : ""
-        }`}
-      >
-        <CardContent className="p-4 flex flex-col gap-3">
-          <div className="flex items-center justify-between">
-            <Icon className="w-4 h-4 text-muted-foreground" />
-            <ArrowRight className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-          </div>
-          <div>
-            <p className={`text-2xl font-display font-bold ${highlight ? "text-accent" : ""}`}>{value}</p>
-            <p className="text-xs text-muted-foreground">{label}</p>
-          </div>
-        </CardContent>
-      </Card>
+    <Link
+      to={to}
+      className="block bg-card border border-border/60 rounded-2xl px-4 py-4 hover:bg-secondary/20 transition-colors"
+    >
+      <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
+        {label}
+      </p>
+      <p className="font-serif text-3xl text-foreground tabular-nums leading-none mt-2">
+        {value}
+      </p>
     </Link>
   );
 }

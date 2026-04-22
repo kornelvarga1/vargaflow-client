@@ -1,14 +1,13 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { useContacts, useDeleteContact, LEAD_SOURCES, type Contact } from "@/hooks/useContacts";
+import { useContacts, useDeleteContact, type Contact } from "@/hooks/useContacts";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Plus, Search, MoreHorizontal, Pencil, Trash2, Mail, Phone } from "lucide-react";
+import { Plus, Search, MoreHorizontal, Pencil, Trash2, Phone } from "lucide-react";
 import ContactFormDialog from "@/components/contacts/ContactFormDialog";
 import { toast } from "sonner";
+import { getInitials, getAvatarTone } from "@/lib/initials";
 
 export default function ContactsPage() {
   const navigate = useNavigate();
@@ -18,12 +17,29 @@ export default function ContactsPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Contact | null>(null);
 
-  const filtered = contacts.filter(
-    (c) =>
-      c.full_name.toLowerCase().includes(search.toLowerCase()) ||
-      (c.email?.toLowerCase().includes(search.toLowerCase())) ||
-      (c.phone?.includes(search))
-  );
+  const filtered = useMemo(() => {
+    const q = search.toLowerCase();
+    return contacts.filter(
+      (c) =>
+        c.full_name.toLowerCase().includes(q) ||
+        c.email?.toLowerCase().includes(q) ||
+        c.phone?.includes(search),
+    );
+  }, [contacts, search]);
+
+  const groups = useMemo(() => {
+    const sorted = [...filtered].sort((a, b) =>
+      a.full_name.localeCompare(b.full_name, undefined, { sensitivity: "base" }),
+    );
+    const map = new Map<string, Contact[]>();
+    for (const c of sorted) {
+      const initials = getInitials(c.full_name);
+      const key = initials ? initials[0] : "#";
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(c);
+    }
+    return Array.from(map.entries());
+  }, [filtered]);
 
   const handleDelete = async (c: Contact) => {
     try {
@@ -35,93 +51,106 @@ export default function ContactsPage() {
   };
 
   return (
-    <div className="p-4 md:p-8 max-w-6xl mx-auto space-y-6 animate-fade-in">
-      <div className="flex items-center justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-display font-bold">Contacts</h1>
-          <p className="text-sm text-muted-foreground">{contacts.length} total contacts</p>
-        </div>
-        <Button onClick={() => { setEditing(null); setDialogOpen(true); }}>
-          <Plus className="w-4 h-4 mr-1" /> Add Contact
-        </Button>
-      </div>
+    <div className="px-4 md:px-6 pt-8 max-w-2xl mx-auto animate-fade-in">
+      <header className="px-1">
+        <h1 className="font-serif text-3xl text-foreground">Contacts</h1>
+        <p className="text-sm text-muted-foreground mt-1">{contacts.length} total</p>
+      </header>
 
-      <div className="relative max-w-sm">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+      <div className="relative mt-6">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
         <Input
-          placeholder="Search contacts..."
+          placeholder="Search"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="pl-9"
+          className="pl-9 h-10 text-base bg-secondary/40 border-0 focus-visible:ring-1 focus-visible:ring-ring/50"
         />
       </div>
 
       {isLoading ? (
-        <div className="space-y-3">
+        <div className="space-y-3 mt-8">
           {[1, 2, 3].map((i) => (
-            <Card key={i} className="bg-card border-border animate-pulse h-20" />
+            <div key={i} className="bg-card border border-border/40 rounded-2xl animate-pulse h-16" />
           ))}
         </div>
       ) : filtered.length === 0 ? (
-        <Card className="bg-card border-border">
-          <CardContent className="p-8 text-center text-muted-foreground">
-            {contacts.length === 0
-              ? "No contacts yet. Add your first contact to get started."
-              : "No contacts match your search."}
-          </CardContent>
-        </Card>
+        <p className="text-sm text-muted-foreground text-center py-12">
+          {contacts.length === 0
+            ? "No contacts yet. Tap + to add your first."
+            : "No contacts match your search."}
+        </p>
       ) : (
-        <div className="space-y-2">
-          {filtered.map((c) => (
-            <Card key={c.id} className="bg-card border-border hover:border-accent/50 transition-colors cursor-pointer" onClick={() => navigate(`/contacts/${c.id}`)}>
-              <CardContent className="p-4 flex items-center gap-4">
-                <div className="w-10 h-10 rounded-full bg-accent flex items-center justify-center shrink-0">
-                  {/^[+\d]/.test(c.full_name.trim()) ? (
-                    <Phone className="w-4 h-4 text-accent-foreground" />
-                  ) : (
-                    <span className="text-sm font-display font-bold text-accent-foreground">
-                      {c.full_name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
-                    </span>
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium font-display truncate">{c.full_name}</p>
-                  <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
-                    {c.email && (
-                      <span className="flex items-center gap-1 truncate">
-                        <Mail className="w-3 h-3" /> {c.email}
-                      </span>
-                    )}
-                    {c.phone && (
-                      <span className="flex items-center gap-1">
-                        <Phone className="w-3 h-3" /> {c.phone}
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <Badge variant="secondary" className="hidden sm:inline-flex text-xs shrink-0">
-                  {c.lead_source}
-                </Badge>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="shrink-0">
-                      <MoreHorizontal className="w-4 h-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => { setEditing(c); setDialogOpen(true); }}>
-                      <Pencil className="w-4 h-4 mr-2" /> Edit
-                    </DropdownMenuItem>
-                    <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(c)}>
-                      <Trash2 className="w-4 h-4 mr-2" /> Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </CardContent>
-            </Card>
+        <div className="space-y-6 mt-6">
+          {groups.map(([letter, items]) => (
+            <section key={letter}>
+              <h2 className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground px-1 pb-2">
+                {letter}
+              </h2>
+              <ul className="bg-card border border-border/60 rounded-2xl divide-y divide-border/40 overflow-hidden">
+                {items.map((c) => {
+                  const isPhone = /^[+\d]/.test(c.full_name.trim());
+                  const subtitle = c.email || c.phone || c.lead_source;
+                  return (
+                    <li key={c.id} className="flex items-center group">
+                      <button
+                        onClick={() => navigate(`/contacts/${c.id}`)}
+                        className="flex-1 flex items-center gap-3 px-4 py-3 text-left hover:bg-secondary/40 transition-colors active-press min-w-0"
+                      >
+                        <div className={`w-10 h-10 rounded-full ${isPhone ? "bg-secondary" : getAvatarTone(c.full_name)} flex items-center justify-center shrink-0`}>
+                          {isPhone ? (
+                            <Phone className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
+                          ) : (
+                            <span className="text-sm font-medium text-white/95">
+                              {getInitials(c.full_name)}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[15px] font-medium text-foreground truncate">{c.full_name}</p>
+                          {subtitle && (
+                            <p className="text-xs text-muted-foreground truncate mt-0.5">{subtitle}</p>
+                          )}
+                        </div>
+                      </button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-9 w-9 shrink-0 mr-2 text-muted-foreground opacity-60 hover:opacity-100"
+                          >
+                            <MoreHorizontal className="w-4 h-4" strokeWidth={1.5} />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => { setEditing(c); setDialogOpen(true); }}>
+                            <Pencil className="w-4 h-4 mr-2" strokeWidth={1.5} /> Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(c)}>
+                            <Trash2 className="w-4 h-4 mr-2" strokeWidth={1.5} /> Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
           ))}
         </div>
       )}
+
+      <div className="h-12" />
+
+      {/* FAB — sits above the floating tab bar */}
+      <button
+        onClick={() => { setEditing(null); setDialogOpen(true); }}
+        aria-label="Add contact"
+        className="fixed right-5 z-30 w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-float flex items-center justify-center active-press hover:brightness-110 transition"
+        style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 5.5rem)" }}
+      >
+        <Plus className="w-6 h-6" strokeWidth={2} />
+      </button>
 
       <ContactFormDialog
         open={dialogOpen}

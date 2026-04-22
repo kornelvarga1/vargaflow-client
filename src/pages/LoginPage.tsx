@@ -50,7 +50,7 @@ export default function LoginPage() {
         <div className="flex flex-col items-center gap-3">
           <img src="/favicon.png" alt="VargaFlow" className="w-12 h-12 rounded-xl" />
           <div className="text-center">
-            <h1 className="text-2xl font-display font-bold text-primary">VargaFlow Client</h1>
+            <h1 className="font-serif text-3xl text-foreground">VargaFlow Client</h1>
             <p className="text-sm text-muted-foreground mt-1">Sign in to your account</p>
           </div>
         </div>
@@ -94,7 +94,7 @@ export default function LoginPage() {
 
           <Button
             type="submit"
-            className="w-full gradient-primary text-white"
+            className="w-full"
             disabled={loading}
           >
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Sign in"}
