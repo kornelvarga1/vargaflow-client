@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
+import { invokeFunction } from "@/lib/invokeFunction";
 import { useBusinessId } from "@/hooks/useBusinessId";
 import { useCustomValues, replaceCustomValues } from "@/hooks/useCustomValues";
 import { useConversationOpen } from "@/context/ConversationContext";
@@ -595,14 +596,15 @@ function ComposeBar({
     setText("");
 
     try {
-      const { data, error } = await supabase.functions.invoke("send-manual-sms", {
-        body: {
+      const { data, error } = await invokeFunction<{ sent?: boolean; error?: string }>(
+        "send-manual-sms",
+        {
           contact_id: contactId,
           business_id: businessId,
           message: content,
           to_phone: contactPhone,
         },
-      });
+      );
 
       if (error || data?.error) {
         const msg = data?.error ?? error?.message ?? "Unknown error";
