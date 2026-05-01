@@ -94,7 +94,7 @@ export default function LoginPage() {
 
           <Button
             type="submit"
-            className="w-full"
+            className="w-full bg-foreground text-background hover:bg-foreground/90"
             disabled={loading}
           >
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Sign in"}
@@ -105,7 +105,7 @@ export default function LoginPage() {
           <button
             type="button"
             onClick={handleForgotPassword}
-            className="text-sm text-primary hover:text-primary/80 hover:underline transition-colors"
+            className="text-sm text-foreground hover:text-foreground/70 hover:underline transition-colors"
           >
             {forgotSent ? "Check your inbox" : "Forgot password?"}
           </button>
