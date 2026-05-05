@@ -232,7 +232,7 @@ Deno.serve(async (req) => {
     <h1>${safeHtml(company_name)}</h1>
 
     <div class="info-box">
-      <p class="step">1. &#11088; This will send out your 5 star review request funnel (gate keeping negative reviews)</p>
+      <p class="step">1. &#11088; This will send out your 5 star review request funnel (gatekeeping negative reviews)</p>
       <p>&#8212; Customer will be reminded to leave you a 5&#9733; review 4 times over a 4 week period</p>
       <p class="note">(*automation stops if they leave a review*)</p>
       <p class="arrow">&#128071;</p>
@@ -247,7 +247,7 @@ Deno.serve(async (req) => {
         <input
           id="first-name"
           type="text"
-          placeholder="Customers First name (For example: John)"
+          placeholder="Customer's first name (For example: John)"
           autocomplete="given-name"
           required
         />

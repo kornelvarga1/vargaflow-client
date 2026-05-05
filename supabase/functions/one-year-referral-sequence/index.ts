@@ -121,7 +121,7 @@ Deno.serve(async (req) => {
         business_id,
         delaySeconds: 0,
         content: resolveClientTemplate(
-          tpl1?.content ?? `Hey {{first_name}}, I am running a returning customer special this week and giving {{discount_amount}}. It's only for the first 3 people — so if you are interested or know someone who might be, just tap the link: {{website_url}}/getyourdiscount {{my_name}} from {{company_name}}`,
+          tpl1?.content ?? `Hey {{first_name}}, I am running a returning customer special this week and giving {{discount_amount}}. It's only for the first 3 people — so if you are interested or know someone who might be, just tap the link: {{website_url}}/discount {{my_name}} from {{company_name}}`,
           vars1,
         ),
       });
@@ -158,7 +158,7 @@ Deno.serve(async (req) => {
         business_id,
         delaySeconds: 0,
         content: resolveClientTemplate(
-          tpl2?.content ?? `Hey {{first_name}}, I am running a limited time special for the next 6 days and giving {{discount_amount}}. So if you are interested or know someone who might be, just tap this link: {{website_url}}/getyourdiscount {{my_name}} from {{company_name}}`,
+          tpl2?.content ?? `Hey {{first_name}}, I am running a limited time special for the next 6 days and giving {{discount_amount}}. So if you are interested or know someone who might be, just tap this link: {{website_url}}/discount {{my_name}} from {{company_name}}`,
           vars2,
         ),
       });
@@ -202,7 +202,7 @@ Deno.serve(async (req) => {
         business_id,
         delaySeconds: 0,
         content: resolveClientTemplate(
-          tpl3?.content ?? `Hey {{first_name}}, I am running a loyalty special this week and giving {{discount_amount}}. It's only for the first 3 people — so if you are interested or know someone who might be, just tap the link: {{website_url}}/getyourdiscount {{my_name}} from {{company_name}}`,
+          tpl3?.content ?? `Hey {{first_name}}, I am running a loyalty special this week and giving {{discount_amount}}. It's only for the first 3 people — so if you are interested or know someone who might be, just tap the link: {{website_url}}/discount {{my_name}} from {{company_name}}`,
           vars3,
         ),
       });
@@ -239,7 +239,7 @@ Deno.serve(async (req) => {
         business_id,
         delaySeconds: 0,
         content: resolveClientTemplate(
-          tpl4?.content ?? `Hey {{first_name}}, I am running a referral special this week and giving {{discount_amount}} on referrals. It's only for the first 4 people — so if you are interested or know someone who might be, just tap this link: {{website_url}}/getyourdiscount {{my_name}} from {{company_name}}`,
+          tpl4?.content ?? `Hey {{first_name}}, I am running a referral special this week and giving {{discount_amount}} on referrals. It's only for the first 4 people — so if you are interested or know someone who might be, just tap this link: {{website_url}}/discount {{my_name}} from {{company_name}}`,
           vars4,
         ),
       });
@@ -276,7 +276,7 @@ Deno.serve(async (req) => {
         business_id,
         delaySeconds: 0,
         content: resolveClientTemplate(
-          tpl5?.content ?? `Hey {{first_name}}, I am running an anniversary special giving {{discount_amount}}. It's only for the next 6 days — so if you're interested or know someone who might be, just tap this link: {{website_url}}/getyourdiscount {{my_name}} from {{company_name}}`,
+          tpl5?.content ?? `Hey {{first_name}}, I am running an anniversary special giving {{discount_amount}}. It's only for the next 6 days — so if you're interested or know someone who might be, just tap this link: {{website_url}}/discount {{my_name}} from {{company_name}}`,
           vars5,
         ),
       });

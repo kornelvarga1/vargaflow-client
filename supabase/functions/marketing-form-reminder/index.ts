@@ -52,7 +52,7 @@ Deno.serve(async (req) => {
     const settings = await fetchSettings(supabase, business_id);
 
     const smsBody =
-      `Hey ${settings.my_name}, it's been about 10 days since ${contact.full_name} (${contact.phone}) requested a quote on your website. If you have worked with them, please remember to add their info to your marketing form. This is important: ${settings.marketing_form_link} [do not reply - not a client]`;
+      `Hey ${settings.my_name}, heads up — it's been about 10 days since ${contact.full_name} (${contact.phone}) requested a quote on your site. If you've finished their job, add them to your marketing form so the review + referral sequences run: ${settings.marketing_form_link}`;
 
     await sendSMSNow(settings.my_phone, smsBody, settings.twilio_phone_number);
 

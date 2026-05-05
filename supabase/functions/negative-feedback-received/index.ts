@@ -107,7 +107,7 @@ Deno.serve(async (req) => {
         business_id,
         delaySeconds: 0,
         content:
-          `Hey ${settings.my_name}, heads up — ${contact_first_name}${contactTag} attempted to leave a negative review (${star_rating} stars or lower). We have blocked it from showing on your public page. Here is their feedback: ${truncated} (Do not reply to this message - not the client)`,
+          `Hey ${settings.my_name}, heads up — ${contact_first_name}${contactTag} just tried to leave a ${star_rating}-star review. Blocked from your public page. Their feedback: ${truncated}`,
       });
     }
 
