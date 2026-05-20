@@ -51,7 +51,10 @@ Deno.serve(async (req) => {
     }
     const authToken = Deno.env.get("TWILIO_AUTH_TOKEN") ?? "";
     const signature = req.headers.get("X-Twilio-Signature");
-    const valid = await validateTwilioSignature(authToken, signature, req.url, paramObj);
+    // Supabase rewrites req.url to http:// — Twilio signed the public https:// URL.
+    // Reconstruct to match, same pattern as inbound-sms / inbound-call.
+    const validationUrl = `https://${new URL(req.url).host}/functions/v1/missed-call-text-back`;
+    const valid = await validateTwilioSignature(authToken, signature, validationUrl, paramObj);
     if (!valid) {
       console.warn("[missed-call-text-back] invalid Twilio signature — rejecting");
       return new Response("Forbidden", { status: 403 });

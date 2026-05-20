@@ -65,6 +65,7 @@ Deno.serve(async (req) => {
     await scheduleOwnerSMS(supabase, {
       to_phone: settings.my_phone,
       contact_id: contact.id,
+      business_id,
       delaySeconds: 30,
       content:
         `New lead from website form. Name: ${contact_name}. Phone: ${contact_phone}. Message: ${message}. We have let them know you will be in touch soon. [do not reply - not a client]`,

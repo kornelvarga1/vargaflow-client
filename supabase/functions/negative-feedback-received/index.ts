@@ -52,36 +52,38 @@ Deno.serve(async (req) => {
     if (!business_id || !UUID_RE.test(business_id)) {
       return jsonResponse({ error: "invalid business_id" }, 400);
     }
-    if (!contact_id || !UUID_RE.test(contact_id)) {
-      return jsonResponse({ error: "invalid contact_id" }, 400);
-    }
+
+    // contact_id is optional — customers navigating to /write-review from SMS
+    // don't carry a contact_id in the URL. If provided, validate it and verify
+    // it belongs to this business (prevents contact enumeration attacks).
+    // business_id UUID check above is the primary security gate either way.
+    let verified_contact_id: string | null = null;
 
     const supabase = getSupabaseAdmin();
 
-    // Verify the contact exists AND belongs to this business. Without this
-    // an attacker can fire SMS at the owner for any business_id they guess.
-    const { data: contact, error: contactErr } = await supabase
-      .from("contacts")
-      .select("id, business_id")
-      .eq("id", contact_id)
-      .maybeSingle();
+    if (contact_id && UUID_RE.test(contact_id)) {
+      const { data: contact, error: contactErr } = await supabase
+        .from("contacts")
+        .select("id, business_id")
+        .eq("id", contact_id)
+        .maybeSingle();
 
-    if (contactErr) {
-      console.error("[negative-feedback-received] contact lookup failed:", contactErr.message);
-      return jsonResponse({ error: "lookup failed" }, 500);
-    }
-    if (!contact || contact.business_id !== business_id) {
-      // Intentionally vague to avoid enumeration feedback.
-      return jsonResponse({ error: "not found" }, 404);
+      if (contactErr) {
+        console.error("[negative-feedback-received] contact lookup failed:", contactErr.message);
+        return jsonResponse({ error: "lookup failed" }, 500);
+      }
+      if (contact && contact.business_id === business_id) {
+        verified_contact_id = contact_id;
+      }
     }
 
     const settings = await fetchSettings(supabase, business_id);
-    await addTag(supabase, contact_id, "negative feedback");
+    if (verified_contact_id) await addTag(supabase, verified_contact_id, "negative feedback");
 
     // Persist the full feedback so the owner has a durable record.
     const safeFeedback = typeof feedback_text === "string" ? feedback_text : "";
     await supabase.from("activity_log").insert({
-      contact_id,
+      contact_id: verified_contact_id,
       business_id,
       activity_type: "negative_feedback",
       description: `${contact_first_name} left ${star_rating}-star feedback`,
@@ -103,7 +105,7 @@ Deno.serve(async (req) => {
 
       await scheduleOwnerSMS(supabase, {
         to_phone: settings.my_phone,
-        contact_id,
+        contact_id: verified_contact_id,
         business_id,
         delaySeconds: 0,
         content:

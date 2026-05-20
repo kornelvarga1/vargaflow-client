@@ -58,6 +58,7 @@ Deno.serve(async (req) => {
     await scheduleOwnerSMS(supabase, {
       to_phone: settings.my_phone,
       contact_id,
+      business_id,
       delaySeconds: 0,
       content:
         `Hey ${settings.my_name}, ${contact_first_name} just filled out your disc form on the website. Info: Name: ${contact_name}, Phone: ${contact_phone}, Message: ${message}. We have told them you will be reaching out soon. (Do not reply to this message - not the client)`,
