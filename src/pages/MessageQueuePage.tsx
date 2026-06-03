@@ -6,6 +6,7 @@ import { invokeFunction } from "@/lib/invokeFunction";
 import { useBusinessId } from "@/hooks/useBusinessId";
 import { useCustomValues, replaceCustomValues } from "@/hooks/useCustomValues";
 import { useConversationOpen } from "@/context/ConversationContext";
+import { ContactProfileBody } from "./ContactProfilePage";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,6 +30,7 @@ type ConversationContact = {
   pipeline: string;
   stage: string;
   lastMessage: string;
+  lastMessageDirection: "inbound" | "outbound";
   lastMessageAt: string;
   hasUnread: boolean;
   messageCount: number;
@@ -96,7 +98,8 @@ function useConversationContacts(businessId: string | undefined) {
           phone: contact.phone,
           pipeline: contact.pipeline,
           stage: contact.stage,
-          lastMessage: (latest.direction === "outbound" ? "You: " : "") + latest.message_content,
+          lastMessage: latest.message_content,
+          lastMessageDirection: (latest.direction ?? "outbound") as "inbound" | "outbound",
           lastMessageAt: latest.sent_at || latest.scheduled_at,
           hasUnread: msgs.some(
             (m) =>
@@ -215,12 +218,10 @@ export default function MessageQueuePage() {
     return () => setConversationOpen(false);
   }, [selectedContactId, setConversationOpen]);
 
-  // Clear optimistic messages when switching contacts
   useEffect(() => {
     setOptimisticMessages([]);
   }, [selectedContactId]);
 
-  // Prune optimistic messages whose real counterpart has arrived as sent
   useEffect(() => {
     if (optimisticMessages.length === 0 || messages.length === 0) return;
     setOptimisticMessages((prev) =>
@@ -236,7 +237,6 @@ export default function MessageQueuePage() {
     );
   }, [messages]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Merge real + optimistic messages, sorted chronologically
   const allMessages = useMemo(() => {
     const dedupedOptimistic = optimisticMessages.filter(
       (opt) =>
@@ -270,7 +270,6 @@ export default function MessageQueuePage() {
     }
   }, [allMessages]);
 
-  // Auto-select first contact on desktop only (don't add to seenIds — user hasn't explicitly opened it)
   useEffect(() => {
     if (!selectedContactId && contacts.length > 0 && window.innerWidth >= 768) {
       setSelectedContactId(contacts[0].id);
@@ -280,224 +279,232 @@ export default function MessageQueuePage() {
   return (
     <div className="flex flex-1 min-h-0 overflow-hidden animate-fade-in">
       {/* Left Panel: Contact List */}
-      <div className={`flex flex-col border-border/40 shrink-0 w-full md:w-80 lg:w-96 md:border-r ${selectedContactId ? "hidden md:flex" : "flex"}`}>
-
-          {/* Header: title + segmented control inline, search below */}
-          <div className="px-4 pt-8 pb-3 shrink-0">
-            <div className="flex items-center justify-between gap-3 mb-4">
-              <h1 className="font-serif text-3xl text-foreground">Messages</h1>
-              <div role="tablist" className="inline-flex items-center bg-secondary/60 rounded-full p-0.5">
-                {(["all", "unread"] as FilterType[]).map((f) => (
-                  <button
-                    key={f}
-                    role="tab"
-                    aria-selected={filter === f}
-                    onClick={() => setFilter(f)}
-                    className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
-                      filter === f
-                        ? "bg-background text-foreground shadow-sm"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    {f === "all" ? "All" : "Unread"}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
-              <Input
-                placeholder="Search"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-9 h-10 text-base bg-secondary/40 border-0 focus-visible:ring-1 focus-visible:ring-ring/50"
-              />
+      <div className={`flex flex-col shrink-0 w-full md:w-80 lg:w-96 bg-background md:bg-secondary ${selectedContactId ? "hidden md:flex" : "flex"}`}>
+        <div className="px-4 pt-8 pb-3 shrink-0">
+          <div className="flex items-center justify-between gap-3 mb-4">
+            <h1 className="font-serif text-3xl text-foreground">Messages</h1>
+            <div role="tablist" className="inline-flex items-center bg-secondary/60 rounded-full p-0.5">
+              {(["all", "unread"] as FilterType[]).map((f) => (
+                <button
+                  key={f}
+                  role="tab"
+                  aria-selected={filter === f}
+                  onClick={() => setFilter(f)}
+                  className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
+                    filter === f
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {f === "all" ? "All" : "Unread"}
+                </button>
+              ))}
             </div>
           </div>
-
-          {/* Contact List */}
-          <div className="flex-1 overflow-y-auto">
-            {contactsLoading ? (
-              <div className="flex justify-center py-8">
-                <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
-              </div>
-            ) : filteredContacts.length === 0 ? (
-              <div className="p-6 text-center text-base text-muted-foreground">
-                {contacts.length === 0
-                  ? "No conversations yet. Messages will appear when you send SMS to contacts."
-                  : "No conversations match your filter."}
-              </div>
-            ) : (
-              <div className="pb-4">
-                {filteredContacts.map((c) => {
-                  const name = c.full_name.trim();
-                  const isPhone = !name || /^[+\d]/.test(name);
-                  const isUnread = c.hasUnread && !seenIds.has(c.id);
-                  return (
-                    <button
-                      key={c.id}
-                      className={`w-full text-left px-4 py-3 flex items-center gap-3 overflow-x-hidden hover:bg-secondary/40 active:bg-secondary transition-colors ${
-                        selectedContactId === c.id ? "bg-secondary/60" : ""
-                      }`}
-                      onClick={() => selectContact(c.id)}
-                    >
-                      <div className={`w-11 h-11 rounded-full ${isPhone ? "bg-secondary" : getAvatarTone(name)} flex items-center justify-center shrink-0`}>
-                        {isPhone ? (
-                          <Phone className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
-                        ) : (
-                          <span className="text-sm font-medium text-white/95">
-                            {getInitials(name)}
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0 overflow-hidden max-w-full">
-                        <div className="flex items-baseline justify-between gap-2">
-                          <p className={`text-[15px] min-w-0 overflow-hidden text-ellipsis whitespace-nowrap ${isUnread ? "font-semibold text-foreground" : "font-medium text-foreground"}`}>
-                            {c.full_name}
-                          </p>
-                          <span className="text-xs text-muted-foreground shrink-0">
-                            {formatDistanceToNow(new Date(c.lastMessageAt), { addSuffix: false })}
-                          </span>
-                        </div>
-                        <p className={`text-sm min-w-0 overflow-hidden text-ellipsis whitespace-nowrap mt-0.5 ${isUnread ? "text-foreground/90" : "text-muted-foreground"}`}>
-                          {c.lastMessage}
-                        </p>
-                      </div>
-                      {isUnread && (
-                        <div className="w-2 h-2 rounded-full bg-primary shrink-0" />
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
+            <Input
+              placeholder="Search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9 h-10 text-base bg-background border border-border/60 focus-visible:ring-1 focus-visible:ring-ring/50"
+            />
           </div>
         </div>
 
-        {/* Right Panel: Conversation
-            Mobile open:   flex-1 flex-col, fills h-dvh outer container
-            Mobile closed: hidden
-            Desktop:       flex-1, sits beside the left panel */}
-      <div className={
-        selectedContactId
-          ? "fixed inset-x-0 top-0 h-dvh flex flex-col overflow-hidden bg-background z-20 md:static md:flex-1 md:h-auto md:inset-auto md:z-auto"
-          : "hidden md:flex md:flex-col md:flex-1 md:min-w-0"
-      }>
-          {!selectedContactId ? (
-            <div className="flex-1 flex items-center justify-center text-muted-foreground text-base">
-              <div className="text-center">
-                <MessageSquare className="w-10 h-10 mx-auto mb-3 opacity-30" />
-                <p>Select a contact to view conversation</p>
-              </div>
+        <div className="flex-1 overflow-y-auto">
+          {contactsLoading ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+            </div>
+          ) : filteredContacts.length === 0 ? (
+            <div className="p-6 text-center text-base text-muted-foreground">
+              {contacts.length === 0
+                ? "No conversations yet. Messages will appear when you send SMS to contacts."
+                : "No conversations match your filter."}
             </div>
           ) : (
-            <>
-              {/* Conversation Header */}
-              {selectedContact && (() => {
-                const headerName = selectedContact.full_name.trim();
-                const headerIsPhone = !headerName || /^[+\d]/.test(headerName);
+            <div className="pb-4 px-2 space-y-0.5">
+              {filteredContacts.map((c) => {
+                const name = c.full_name.trim();
+                const isPhone = !name || /^[+\d]/.test(name);
+                const isUnread = c.hasUnread && !seenIds.has(c.id);
                 return (
-                  <div className="sticky top-0 z-10 px-3 py-2.5 border-b border-border/40 bg-background/95 backdrop-blur space-y-1.5">
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="md:hidden shrink-0 -ml-1 h-9 w-9"
-                        onClick={() => setSelectedContactId(null)}
-                      >
-                        <ArrowLeft className="w-5 h-5" strokeWidth={1.5} />
-                      </Button>
-                      <Link
-                        to={`/contacts/${selectedContact.id}`}
-                        className="flex items-center gap-2 flex-1 min-w-0 px-1 py-1 rounded-lg hover:bg-secondary/40 transition-colors"
-                      >
-                        <div className={`w-9 h-9 rounded-full ${headerIsPhone ? "bg-secondary" : getAvatarTone(headerName)} flex items-center justify-center shrink-0`}>
-                          {headerIsPhone ? (
-                            <Phone className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
-                          ) : (
-                            <span className="text-xs font-medium text-white/95">
-                              {getInitials(headerName)}
-                            </span>
-                          )}
-                        </div>
-                        <p className="font-semibold text-[15px] flex-1 truncate text-foreground">{selectedContact.full_name}</p>
-                      </Link>
-                      {selectedContact.phone && (
-                        <a href={`tel:${selectedContact.phone}`} className="shrink-0">
-                          <Button variant="ghost" size="icon" className="h-9 w-9">
-                            <Phone className="w-4 h-4" strokeWidth={1.5} />
-                          </Button>
-                        </a>
+                  <button
+                    key={c.id}
+                    className={`w-full text-left px-3 py-2.5 rounded-xl flex items-center gap-3 overflow-x-hidden transition-colors ${
+                      selectedContactId === c.id
+                        ? "bg-background shadow-sm"
+                        : "hover:bg-background/60 active:bg-background/80"
+                    }`}
+                    onClick={() => selectContact(c.id)}
+                  >
+                    <div className={`w-11 h-11 rounded-full ${isPhone ? "bg-secondary" : getAvatarTone(name)} flex items-center justify-center shrink-0`}>
+                      {isPhone ? (
+                        <Phone className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
+                      ) : (
+                        <span className="text-sm font-medium text-white/95">
+                          {getInitials(name)}
+                        </span>
                       )}
                     </div>
-                    {activeSeq && (
-                      <div className="flex items-center gap-1.5 flex-wrap pl-1">
-                        <Badge variant="outline" className="text-xs gap-1 border-border/60 text-muted-foreground font-normal">
-                          <Zap className="w-3 h-3 text-muted-foreground" strokeWidth={1.5} />
-                          {(activeSeq as any).sequences?.name || "Sequence"} — Step {activeSeq.current_step}
-                        </Badge>
+                    <div className="flex-1 min-w-0 overflow-hidden max-w-full">
+                      <div className="flex items-baseline justify-between gap-2">
+                        <p className={`text-[15px] min-w-0 overflow-hidden text-ellipsis whitespace-nowrap ${isUnread ? "font-semibold text-foreground" : "font-medium text-foreground"}`}>
+                          {c.full_name}
+                        </p>
+                        <span className="text-xs text-muted-foreground shrink-0">
+                          {formatDistanceToNow(new Date(c.lastMessageAt), { addSuffix: false })}
+                        </span>
                       </div>
+                      <p className={`text-sm min-w-0 overflow-hidden text-ellipsis whitespace-nowrap mt-0.5 flex items-center gap-1 ${isUnread ? "text-foreground/90" : "text-muted-foreground"}`}>
+                        {c.lastMessageDirection === "outbound" && (
+                          <ArrowUp className="w-3 h-3 shrink-0 opacity-50" strokeWidth={2} />
+                        )}
+                        <span className="truncate">{c.lastMessage}</span>
+                      </p>
+                    </div>
+                    {isUnread && (
+                      <div className="w-2 h-2 rounded-full bg-primary shrink-0" />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Right Panel: Conversation */}
+      <div className={
+        selectedContactId
+          ? "fixed inset-x-0 top-0 h-dvh flex flex-col overflow-hidden bg-background z-20 md:static md:flex-1 md:h-auto md:inset-auto md:z-auto md:bg-background"
+          : "hidden md:flex md:flex-col md:flex-1 md:min-w-0 md:bg-background"
+      }>
+        {!selectedContactId ? (
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-center">
+              <MessageSquare className="w-10 h-10 mx-auto mb-3 text-muted-foreground/25" strokeWidth={1.25} />
+              <p className="text-sm font-medium text-foreground/50">No conversation selected</p>
+              <p className="text-xs text-muted-foreground/50 mt-1">Pick a contact from the left to start</p>
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* Conversation Header */}
+            {selectedContact && (() => {
+              const headerName = selectedContact.full_name.trim();
+              const headerIsPhone = !headerName || /^[+\d]/.test(headerName);
+              return (
+                <div className="sticky top-0 z-10 px-3 py-2.5 border-b border-border/30 bg-background/90 backdrop-blur-sm space-y-1.5 shrink-0">
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="md:hidden shrink-0 -ml-1 h-9 w-9"
+                      onClick={() => setSelectedContactId(null)}
+                    >
+                      <ArrowLeft className="w-5 h-5" strokeWidth={1.5} />
+                    </Button>
+                    <Link
+                      to={`/contacts/${selectedContact.id}`}
+                      className="flex items-center gap-2 flex-1 min-w-0 px-1 py-1 rounded-lg hover:bg-secondary/40 transition-colors"
+                    >
+                      <div className={`w-9 h-9 rounded-full ${headerIsPhone ? "bg-secondary" : getAvatarTone(headerName)} flex items-center justify-center shrink-0`}>
+                        {headerIsPhone ? (
+                          <Phone className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
+                        ) : (
+                          <span className="text-xs font-medium text-white/95">
+                            {getInitials(headerName)}
+                          </span>
+                        )}
+                      </div>
+                      <p className="font-semibold text-[15px] flex-1 truncate text-foreground">{selectedContact.full_name}</p>
+                    </Link>
+                    {selectedContact.phone && (
+                      <a href={`tel:${selectedContact.phone}`} className="shrink-0">
+                        <Button variant="ghost" size="icon" className="h-9 w-9">
+                          <Phone className="w-4 h-4" strokeWidth={1.5} />
+                        </Button>
+                      </a>
                     )}
                   </div>
-                );
-              })()}
+                  {activeSeq && (
+                    <div className="flex items-center gap-1.5 flex-wrap pl-1">
+                      <Badge variant="outline" className="text-xs gap-1 border-border/60 text-muted-foreground font-normal">
+                        <Zap className="w-3 h-3 text-muted-foreground" strokeWidth={1.5} />
+                        {(activeSeq as any).sequences?.name || "Sequence"} — Step {activeSeq.current_step}
+                      </Badge>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
 
-              {/* Messages — with timestamp clusters at > 5min gaps */}
-              <div ref={scrollRef} className="flex-1 overflow-y-auto overscroll-contain px-3 py-4 space-y-1.5">
-                {msgsLoading ? (
-                  <div className="flex justify-center py-12">
-                    <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
-                  </div>
-                ) : allMessages.length === 0 ? (
-                  <div className="flex items-center justify-center h-full text-base text-muted-foreground">
-                    No messages yet.
-                  </div>
-                ) : (
-                  (() => {
-                    const elements: React.ReactNode[] = [];
-                    let lastTime: number | null = null;
-                    for (const msg of allMessages) {
-                      const t = new Date(msg.sent_at || msg.scheduled_at).getTime();
-                      if (lastTime === null || t - lastTime > 5 * 60 * 1000) {
-                        elements.push(
-                          <div
-                            key={`sep-${msg.id}`}
-                            className="text-center text-[11px] text-muted-foreground py-2 select-none"
-                          >
+            {/* Messages */}
+            <div ref={scrollRef} className="flex-1 overflow-y-auto overscroll-contain px-3 py-4 space-y-1.5">
+              {msgsLoading ? (
+                <div className="flex justify-center py-12">
+                  <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+                </div>
+              ) : allMessages.length === 0 ? (
+                <div className="flex items-center justify-center h-full text-base text-muted-foreground">
+                  No messages yet.
+                </div>
+              ) : (
+                (() => {
+                  const elements: React.ReactNode[] = [];
+                  let lastTime: number | null = null;
+                  for (const msg of allMessages) {
+                    const t = new Date(msg.sent_at || msg.scheduled_at).getTime();
+                    if (lastTime === null || t - lastTime > 5 * 60 * 1000) {
+                      elements.push(
+                        <div key={`sep-${msg.id}`} className="flex items-center gap-3 py-2 select-none">
+                          <div className="flex-1 h-px bg-border/40" />
+                          <span className="text-[11px] text-muted-foreground/70 shrink-0">
                             {format(new Date(t), "MMM d · h:mm a")}
-                          </div>
-                        );
-                      }
-                      elements.push(<MessageBubble key={msg.id} message={msg} />);
-                      lastTime = t;
+                          </span>
+                          <div className="flex-1 h-px bg-border/40" />
+                        </div>
+                      );
                     }
-                    return elements;
-                  })()
-                )}
-              </div>
-
-              {/* Compose */}
-              <div className="flex-none" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 0.5rem)' }}>
-                <ComposeBar
-                  contactId={selectedContactId}
-                  contactName={selectedContact?.full_name || ""}
-                  contactPhone={selectedContact?.phone || null}
-                  businessId={businessId}
-                  onSent={() => {
-                    qc.invalidateQueries({ queryKey: ["conversation", selectedContactId] });
-                    qc.invalidateQueries({ queryKey: ["conversation_contacts"] });
-                  }}
-                  onOptimisticMessage={(msg) => setOptimisticMessages((prev) => [...prev, msg])}
-                  onOptimisticRollback={(scheduledAt) =>
-                    setOptimisticMessages((prev) =>
-                      prev.filter((m) => m.scheduled_at !== scheduledAt)
-                    )
+                    elements.push(<MessageBubble key={msg.id} message={msg} />);
+                    lastTime = t;
                   }
-                />
-              </div>
-            </>
-          )}
+                  return elements;
+                })()
+              )}
+            </div>
+
+            {/* Compose */}
+            <div className="flex-none">
+              <ComposeBar
+                contactId={selectedContactId}
+                contactName={selectedContact?.full_name || ""}
+                contactPhone={selectedContact?.phone || null}
+                businessId={businessId}
+                onSent={() => {
+                  qc.invalidateQueries({ queryKey: ["conversation", selectedContactId] });
+                  qc.invalidateQueries({ queryKey: ["conversation_contacts"] });
+                }}
+                onOptimisticMessage={(msg) => setOptimisticMessages((prev) => [...prev, msg])}
+                onOptimisticRollback={(scheduledAt) =>
+                  setOptimisticMessages((prev) =>
+                    prev.filter((m) => m.scheduled_at !== scheduledAt)
+                  )
+                }
+              />
+            </div>
+          </>
+        )}
       </div>
+
+      {/* Right profile panel — desktop only */}
+      {selectedContactId && businessId && (
+        <div className="hidden xl:flex flex-col w-80 shrink-0 border-l border-border/30 bg-secondary overflow-y-auto">
+          <ContactProfileBody id={selectedContactId} businessId={businessId} showBackButton={false} />
+        </div>
+      )}
     </div>
   );
 }
@@ -528,17 +535,17 @@ function MessageBubble({ message }: { message: Message }) {
   return (
     <div className={`flex ${isOutbound ? "justify-end" : "justify-start"}`}>
       <div
-        className={`max-w-[72%] rounded-3xl px-3.5 py-2.5 ${
+        className={`max-w-[72%] rounded-2xl px-3.5 py-2.5 ${
           isOutbound
-            ? "bg-secondary text-foreground rounded-br-lg"
-            : "bg-[var(--bubble-in-bg)] text-[var(--bubble-in-text)] rounded-bl-lg"
+            ? "bg-foreground/80 text-background"
+            : "bg-[var(--bubble-in-bg)] text-[var(--bubble-in-text)]"
         } ${isCancelled ? "opacity-50 line-through" : ""} ${isPending && isOutbound ? "opacity-60" : ""}`}
         title={format(new Date(message.sent_at || message.scheduled_at), "MMM d, yyyy · h:mm a")}
       >
         <p className="text-[15px] leading-[1.45] whitespace-pre-wrap">
           {renderMessageContent(
             message.message_content,
-            "underline underline-offset-2 text-foreground"
+            isOutbound ? "underline underline-offset-2 text-background" : "underline underline-offset-2 text-foreground"
           )}
         </p>
         {isPending && (
@@ -574,17 +581,7 @@ function ComposeBar({
 }) {
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
-  const mobileTextareaRef = useRef<HTMLTextAreaElement>(null);
-  const desktopTextareaRef = useRef<HTMLTextAreaElement>(null);
-
-  useEffect(() => {
-    for (const ref of [mobileTextareaRef, desktopTextareaRef]) {
-      const el = ref.current;
-      if (!el) continue;
-      el.style.height = "auto";
-      el.style.height = `${el.scrollHeight}px`;
-    }
-  }, [text]);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const handleSend = async () => {
     if (!text.trim()) return;
@@ -593,7 +590,6 @@ function ComposeBar({
     const content = text.trim();
     const scheduledAt = new Date().toISOString();
 
-    // Show message immediately in the thread (optimistic)
     onOptimisticMessage({
       id: `optimistic-${scheduledAt}`,
       message_content: content,
@@ -619,7 +615,6 @@ function ComposeBar({
 
       if (error || data?.error) {
         const msg = data?.error ?? error?.message ?? "Unknown error";
-        console.error("[ComposeBar] send-manual-sms error:", msg);
         onOptimisticRollback(scheduledAt);
         setText(content);
         throw new Error(msg);
@@ -627,7 +622,6 @@ function ComposeBar({
 
       onSent();
     } catch (err) {
-      console.error("[ComposeBar] send failed:", err);
       const msg = err instanceof Error ? err.message : JSON.stringify(err);
       toast.error("Failed to queue message", { description: msg });
     } finally {
@@ -643,77 +637,47 @@ function ComposeBar({
   };
 
   return (
-    <div className="px-3 py-2 border-t border-border bg-background shrink-0">
-      {/* Mobile: separated slim bar + bigger button beside */}
-      <div className="md:hidden flex items-end gap-2">
+    <div className="px-3 pb-3 pt-2 shrink-0" style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 0.75rem)" }}>
+      <div className="relative rounded-2xl border border-border/60 bg-background focus-within:border-border focus-within:ring-2 focus-within:ring-ring/30 transition-all shadow-md">
         <textarea
-          ref={mobileTextareaRef}
+          ref={textareaRef}
           value={text}
-          onChange={(e) => setText(e.target.value)}
+          onChange={(e) => {
+            setText(e.target.value);
+            const el = e.target;
+            el.style.height = "auto";
+            el.style.height = `${el.scrollHeight}px`;
+          }}
           onKeyDown={handleKeyDown}
-          placeholder={`Message ${contactName}...`}
+          placeholder={`Message ${contactName}…`}
           inputMode="text"
           autoComplete="new-password"
           autoCorrect="off"
           autoCapitalize="off"
           spellCheck={false}
           data-form-type="other"
-          className="flex-1 resize-none rounded-2xl border border-input bg-background px-4 py-1.5 text-base placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring min-h-[36px] max-h-[180px] overflow-y-auto"
+          className="block w-full resize-none bg-transparent pl-4 pr-4 pt-3 pb-10 text-base placeholder:text-muted-foreground focus:outline-none min-h-[52px] max-h-[180px] overflow-y-auto"
           rows={1}
         />
-        <button
-          type="button"
-          onClick={handleSend}
-          disabled={!text.trim() || sending}
-          aria-label="Send"
-          className={`shrink-0 h-10 w-10 rounded-full flex items-center justify-center transition-colors disabled:opacity-100 ${
-            text.trim()
-              ? "bg-primary text-primary-foreground hover:brightness-110"
-              : "bg-secondary text-muted-foreground"
-          }`}
-        >
-          {sending ? (
-            <Loader2 className="w-5 h-5 animate-spin" />
-          ) : (
-            <ArrowUp className="w-5 h-5" strokeWidth={2.25} />
-          )}
-        </button>
-      </div>
-
-      {/* Desktop: unified rounded-full pill with button inside */}
-      <div className="hidden md:block relative rounded-2xl border border-input bg-background focus-within:ring-2 focus-within:ring-ring transition-shadow">
-        <textarea
-          ref={desktopTextareaRef}
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder={`Message ${contactName}...`}
-          inputMode="text"
-          autoComplete="new-password"
-          autoCorrect="off"
-          autoCapitalize="off"
-          spellCheck={false}
-          data-form-type="other"
-          className="block w-full resize-none bg-transparent pl-5 pr-12 py-2.5 text-base placeholder:text-muted-foreground focus:outline-none min-h-[44px] max-h-[180px] overflow-y-auto"
-          rows={1}
-        />
-        <button
-          type="button"
-          onClick={handleSend}
-          disabled={!text.trim() || sending}
-          aria-label="Send"
-          className={`absolute right-1 bottom-1 h-9 w-9 rounded-full flex items-center justify-center transition-colors disabled:opacity-100 ${
-            text.trim()
-              ? "bg-primary text-primary-foreground hover:brightness-110"
-              : "bg-secondary text-muted-foreground"
-          }`}
-        >
-          {sending ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
-            <ArrowUp className="w-4 h-4" strokeWidth={2.25} />
-          )}
-        </button>
+        <div className="absolute bottom-0 left-0 right-0 flex items-center justify-end px-2 pb-2">
+          <button
+            type="button"
+            onClick={handleSend}
+            disabled={sending || !text.trim()}
+            aria-label="Send"
+            className={`h-9 w-9 rounded-xl flex items-center justify-center bg-primary text-primary-foreground hover:brightness-110 transition-all duration-200 origin-center ${
+              text.trim() || sending
+                ? "scale-100 opacity-100"
+                : "scale-50 opacity-0 pointer-events-none"
+            }`}
+          >
+            {sending ? (
+              <Loader2 className="w-4 h-4 animate-spin" strokeWidth={2} />
+            ) : (
+              <ArrowUp className="w-4 h-4" strokeWidth={2.5} />
+            )}
+          </button>
+        </div>
       </div>
     </div>
   );

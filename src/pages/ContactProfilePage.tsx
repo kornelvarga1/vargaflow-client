@@ -119,13 +119,11 @@ function getActivityIcon(type: string) {
 
 // --- Main Component ---
 
-export default function ContactProfilePage() {
-  const { id } = useParams<{ id: string }>();
+export function ContactProfileBody({ id, businessId, showBackButton = true }: { id: string; businessId: string | undefined; showBackButton?: boolean }) {
   const navigate = useNavigate();
-  const { data: businessId } = useBusinessId();
-  const { data: contact, isLoading } = useContact(id!, businessId);
-  const { data: activities = [] } = useContactActivity(id!, businessId);
-  const { data: messages = [] } = useContactMessages(id!, businessId);
+  const { data: contact, isLoading } = useContact(id, businessId);
+  const { data: activities = [] } = useContactActivity(id, businessId);
+  const { data: messages = [] } = useContactMessages(id, businessId);
   const qc = useQueryClient();
 
   const updateContact = useUpdateContact();
@@ -200,16 +198,20 @@ export default function ContactProfilePage() {
     <div className="px-4 md:px-6 pt-4 max-w-2xl mx-auto animate-fade-in">
       {/* Top action row */}
       <div className="flex items-center justify-between -mx-1">
-        <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => navigate(-1)}>
-          <ArrowLeft className="w-5 h-5" strokeWidth={1.5} />
-        </Button>
+        {showBackButton ? (
+          <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => navigate(-1)}>
+            <ArrowLeft className="w-5 h-5" strokeWidth={1.5} />
+          </Button>
+        ) : <div />}
         <div className="flex items-center gap-1">
           <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground" onClick={() => setEditOpen(true)}>
             <Pencil className="w-4 h-4" strokeWidth={1.5} />
           </Button>
-          <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground" onClick={() => navigate("/messages", { state: { contactId: contact.id } })}>
-            <MessageSquare className="w-4 h-4" strokeWidth={1.5} />
-          </Button>
+          {showBackButton && (
+            <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground" onClick={() => navigate("/messages", { state: { contactId: contact.id } })}>
+              <MessageSquare className="w-4 h-4" strokeWidth={1.5} />
+            </Button>
+          )}
         </div>
       </div>
 
@@ -343,6 +345,12 @@ export default function ContactProfilePage() {
       />
     </div>
   );
+}
+
+export default function ContactProfilePage() {
+  const { id } = useParams<{ id: string }>();
+  const { data: businessId } = useBusinessId();
+  return <ContactProfileBody id={id!} businessId={businessId} showBackButton={true} />;
 }
 
 // --- Send SMS Dialog (copy-to-clipboard for now) ---
