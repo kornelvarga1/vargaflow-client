@@ -638,7 +638,7 @@ function ComposeBar({
 
   return (
     <div className="px-3 pb-3 pt-2 shrink-0" style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 0.75rem)" }}>
-      <div className="relative rounded-2xl border border-border/60 bg-background focus-within:border-border focus-within:ring-2 focus-within:ring-ring/30 transition-all shadow-md">
+      <div className="relative rounded-2xl border border-border/60 bg-background focus-within:border-border focus-within:ring-2 focus-within:ring-ring transition-all shadow-md">
         <textarea
           ref={textareaRef}
           value={text}
@@ -649,7 +649,7 @@ function ComposeBar({
             el.style.height = `${el.scrollHeight}px`;
           }}
           onKeyDown={handleKeyDown}
-          placeholder={`Message ${contactName}…`}
+          placeholder="Message…"
           inputMode="text"
           autoComplete="new-password"
           autoCorrect="off"
