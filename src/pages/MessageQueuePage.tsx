@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { invokeFunction } from "@/lib/invokeFunction";
 import { useBusinessId } from "@/hooks/useBusinessId";
+import { useCallDevice } from "@/hooks/useCallDevice";
 import { useCustomValues, replaceCustomValues } from "@/hooks/useCustomValues";
 import { useConversationOpen } from "@/context/ConversationContext";
 import { ContactProfileBody } from "./ContactProfilePage";
@@ -18,6 +19,8 @@ import {
   ArrowUp,
   Zap,
   Phone,
+  PhoneOff,
+  PhoneIncoming,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format, formatDistanceToNow } from "date-fns";
@@ -198,6 +201,7 @@ export default function MessageQueuePage() {
   const [filter, setFilter] = useState<FilterType>("all");
   const { data: businessId } = useBusinessId();
   const qc = useQueryClient();
+  const { ready: callReady, callState, activeCall, incomingCall, call: startCall, hangup, answer } = useCallDevice(businessId);
 
   const selectContact = (id: string) => {
     setSelectedContactId(id);
@@ -422,11 +426,21 @@ export default function MessageQueuePage() {
                       <p className="font-semibold text-[15px] flex-1 truncate text-foreground">{selectedContact.full_name}</p>
                     </Link>
                     {selectedContact.phone && (
-                      <a href={`tel:${selectedContact.phone}`} className="shrink-0">
-                        <Button variant="ghost" size="icon" className="h-9 w-9">
+                      callState === "active" || callState === "connecting" ? (
+                        <Button variant="ghost" size="icon" className="h-9 w-9 text-destructive shrink-0" onClick={hangup}>
+                          <PhoneOff className="w-4 h-4" strokeWidth={1.5} />
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className={`h-9 w-9 shrink-0 ${callReady ? "" : "opacity-40"}`}
+                          disabled={!callReady || callState !== "idle"}
+                          onClick={() => startCall(selectedContact.phone!, selectedContact.id)}
+                        >
                           <Phone className="w-4 h-4" strokeWidth={1.5} />
                         </Button>
-                      </a>
+                      )
                     )}
                   </div>
                   {activeSeq && (
@@ -440,6 +454,33 @@ export default function MessageQueuePage() {
                 </div>
               );
             })()}
+
+            {/* Incoming call banner */}
+            {callState === "incoming" && incomingCall && (
+              <div className="flex items-center justify-between px-4 py-2 bg-primary/10 border-b border-primary/20 shrink-0">
+                <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                  <PhoneIncoming className="w-4 h-4 text-primary animate-pulse" strokeWidth={1.5} />
+                  Incoming call
+                </div>
+                <div className="flex gap-2">
+                  <Button size="sm" className="h-7 bg-primary hover:brightness-110" onClick={answer}>Answer</Button>
+                  <Button size="sm" variant="ghost" className="h-7 text-destructive hover:text-destructive" onClick={hangup}>Decline</Button>
+                </div>
+              </div>
+            )}
+
+            {/* Active call bar */}
+            {(callState === "active" || callState === "connecting") && (
+              <div className="flex items-center justify-between px-4 py-2 bg-green-500/10 border-b border-green-500/20 shrink-0">
+                <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                  <Phone className="w-4 h-4 text-green-600" strokeWidth={1.5} />
+                  {callState === "connecting" ? "Connecting…" : "On call"}
+                </div>
+                <Button size="sm" variant="ghost" className="h-7 text-destructive hover:text-destructive" onClick={hangup}>
+                  <PhoneOff className="w-3.5 h-3.5 mr-1" strokeWidth={1.5} /> End
+                </Button>
+              </div>
+            )}
 
             {/* Messages */}
             <div ref={scrollRef} className="flex-1 overflow-y-auto overscroll-contain px-3 py-4 space-y-1.5">
@@ -531,6 +572,20 @@ function MessageBubble({ message }: { message: Message }) {
   const isOutbound = message.direction === "outbound";
   const isPending = message.status === "pending";
   const isCancelled = message.status === "cancelled";
+
+  if (message.message_type === "call") {
+    return (
+      <div className="flex justify-center">
+        <div
+          className="flex items-center gap-1.5 text-xs text-muted-foreground bg-secondary/60 rounded-full px-3 py-1.5 select-none"
+          title={format(new Date(message.sent_at || message.scheduled_at), "MMM d · h:mm a")}
+        >
+          <Phone className="w-3 h-3" strokeWidth={1.5} />
+          {message.message_content}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`flex ${isOutbound ? "justify-end" : "justify-start"}`}>
