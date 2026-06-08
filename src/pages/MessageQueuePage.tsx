@@ -201,7 +201,10 @@ export default function MessageQueuePage() {
   const [filter, setFilter] = useState<FilterType>("all");
   const { data: businessId } = useBusinessId();
   const qc = useQueryClient();
-  const { ready: callReady, callState, activeCall, incomingCall, call: startCall, hangup, answer } = useCallDevice(businessId);
+  const { ready: callReady, callState, activeCall, incomingCall, call: startCall, hangup, answer, initError: callInitError } = useCallDevice(businessId);
+  useEffect(() => {
+    if (callInitError) toast.error("Call setup failed", { description: callInitError, duration: 10000 });
+  }, [callInitError]);
 
   const selectContact = (id: string) => {
     setSelectedContactId(id);
@@ -434,6 +437,7 @@ export default function MessageQueuePage() {
                         <Button
                           variant="ghost"
                           size="icon"
+                          title={callInitError ?? undefined}
                           className={`h-9 w-9 shrink-0 ${callReady ? "" : "opacity-40"}`}
                           disabled={!callReady || callState !== "idle"}
                           onClick={() => startCall(selectedContact.phone!, selectedContact.id)}

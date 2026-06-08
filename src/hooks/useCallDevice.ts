@@ -10,23 +10,30 @@ export function useCallDevice(businessId: string | undefined) {
   const [activeCall, setActiveCall] = useState<Call | null>(null);
   const [incomingCall, setIncomingCall] = useState<Call | null>(null);
   const [ready, setReady] = useState(false);
+  const [initError, setInitError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!businessId) return;
     let device: Device;
 
     const init = async () => {
+      setInitError(null);
       const { data, error } = await invokeFunction<{ token: string }>("twilio-token", { business_id: businessId });
       if (error || !data?.token) {
-        console.error("[callDevice] token fetch failed:", error);
+        const msg = error?.message ?? "No token returned";
+        console.error("[callDevice] token fetch failed:", msg);
+        setInitError(`Token: ${msg}`);
         return;
       }
 
       device = new Device(data.token, { logLevel: "error" });
 
-      device.on("registered", () => setReady(true));
+      device.on("registered", () => { setReady(true); setInitError(null); });
       device.on("unregistered", () => setReady(false));
-      device.on("error", (err) => console.error("[callDevice] error:", err));
+      device.on("error", (err) => {
+        console.error("[callDevice] error:", err);
+        setInitError(`Device: ${err.message ?? String(err)}`);
+      });
 
       device.on("incoming", (call: Call) => {
         setIncomingCall(call);
@@ -81,5 +88,5 @@ export function useCallDevice(businessId: string | undefined) {
     incomingCall.on("disconnect", () => { setActiveCall(null); setCallState("idle"); });
   }, [incomingCall]);
 
-  return { ready, callState, activeCall, incomingCall, call, hangup, answer };
+  return { ready, callState, activeCall, incomingCall, call, hangup, answer, initError };
 }
