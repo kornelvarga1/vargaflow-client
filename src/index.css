@@ -138,6 +138,11 @@
     font-feature-settings: "ss01", "cv11";
   }
 
+  /* Prevent iOS auto-zoom on input focus (triggers when font-size < 16px) */
+  input, textarea, select {
+    font-size: max(16px, 1em);
+  }
+
   html {
     scroll-behavior: smooth;
   }
