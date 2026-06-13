@@ -7,6 +7,8 @@ import { useUpdateContact, type Contact } from "@/hooks/useContacts";
 import { logActivity } from "@/hooks/useActivityLog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
@@ -26,8 +28,11 @@ import {
   Loader2,
   Copy,
   Pencil,
+  CheckCircle2,
 } from "lucide-react";
 import ContactFormDialog from "@/components/contacts/ContactFormDialog";
+import { invokeFunction } from "@/lib/invokeFunction";
+import { normalizePhone } from "@/lib/utils";
 import { toast } from "sonner";
 import { format, formatDistanceToNow } from "date-fns";
 import { getInitials, getAvatarTone } from "@/lib/initials";
@@ -130,6 +135,22 @@ export function ContactProfileBody({ id, businessId, showBackButton = true }: { 
 
   const [smsDialogOpen, setSmsDialogOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+  const [jobCompleteOpen, setJobCompleteOpen] = useState(false);
+
+  function handleJobCompleteClick() {
+    if (!contact) return;
+    const firstName = contact.full_name.trim().split(/\s+/)[0] || "";
+    if (!firstName || /^[+\d]/.test(firstName)) {
+      toast.error("Add the customer's name before enrolling.", { description: "Tap the edit button to add it." });
+      return;
+    }
+    const digits = normalizePhone(contact.phone || "");
+    if (!digits || digits.length !== 10) {
+      toast.error("Can't submit — contact needs a valid 10-digit phone number.");
+      return;
+    }
+    setJobCompleteOpen(true);
+  }
   const [notesValue, setNotesValue] = useState("");
   const notesRef = useRef<HTMLTextAreaElement>(null);
 
@@ -206,6 +227,15 @@ export function ContactProfileBody({ id, businessId, showBackButton = true }: { 
         <div className="flex items-center gap-1">
           <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground" onClick={() => setEditOpen(true)}>
             <Pencil className="w-4 h-4" strokeWidth={1.5} />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-9 w-9 text-muted-foreground"
+            title="Job Complete"
+            onClick={handleJobCompleteClick}
+          >
+            <CheckCircle2 className="w-4 h-4" strokeWidth={1.5} />
           </Button>
           {showBackButton && (
             <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground" onClick={() => navigate("/messages", { state: { contactId: contact.id } })}>
@@ -343,6 +373,12 @@ export function ContactProfileBody({ id, businessId, showBackButton = true }: { 
         onOpenChange={setSmsDialogOpen}
         contact={contact}
       />
+      <JobCompleteDialog
+        open={jobCompleteOpen}
+        onOpenChange={setJobCompleteOpen}
+        contact={contact}
+        businessId={businessId}
+      />
     </div>
   );
 }
@@ -351,6 +387,118 @@ export default function ContactProfilePage() {
   const { id } = useParams<{ id: string }>();
   const { data: businessId } = useBusinessId();
   return <ContactProfileBody id={id!} businessId={businessId} showBackButton={true} />;
+}
+
+// --- Job Complete Confirmation Dialog ---
+
+function JobCompleteDialog({
+  open,
+  onOpenChange,
+  contact,
+  businessId,
+}: {
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+  contact: Contact;
+  businessId: string | undefined;
+}) {
+  const [loading, setLoading] = useState(false);
+  const [firstName, setFirstName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [firstNameError, setFirstNameError] = useState("");
+  const [phoneError, setPhoneError] = useState("");
+
+  useEffect(() => {
+    if (open) {
+      setFirstName(contact.full_name.trim().split(/\s+/)[0] || "");
+      setPhone(contact.phone || "");
+      setFirstNameError("");
+      setPhoneError("");
+    }
+  }, [open, contact]);
+
+  async function handleConfirm() {
+    let ok = true;
+    if (!firstName.trim() || /^[+\d]/.test(firstName.trim())) {
+      setFirstNameError("Enter the customer's first name.");
+      ok = false;
+    } else {
+      setFirstNameError("");
+    }
+    const digits = normalizePhone(phone);
+    if (!digits || digits.length !== 10) {
+      setPhoneError("Enter a valid 10-digit phone number.");
+      ok = false;
+    } else {
+      setPhoneError("");
+    }
+    if (!ok) return;
+
+    setLoading(true);
+    const { error } = await invokeFunction("one-year-followup-entry", {
+      business_id: businessId,
+      contact_first_name: firstName.trim(),
+      contact_phone: normalizePhone(phone),
+    });
+    setLoading(false);
+    if (error) {
+      toast.error("Something went wrong — try again.");
+    } else {
+      toast.success(`${firstName.trim()} added to review + follow-up sequence.`);
+      onOpenChange(false);
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-sm bg-card border-border">
+        <DialogHeader>
+          <DialogTitle>Add to Job Complete?</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground uppercase tracking-wide">Customer First Name</Label>
+              <Input
+                value={firstName}
+                onChange={(e) => { setFirstName(e.target.value); if (firstNameError) setFirstNameError(""); }}
+                placeholder="e.g. John"
+                className={firstNameError ? "border-destructive" : ""}
+              />
+              {firstNameError && <p className="text-xs text-destructive">{firstNameError}</p>}
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground uppercase tracking-wide">Phone</Label>
+              <Input
+                type="tel"
+                inputMode="tel"
+                value={phone}
+                onChange={(e) => { setPhone(e.target.value); if (phoneError) setPhoneError(""); }}
+                placeholder="e.g. 8085551234"
+                className={phoneError ? "border-destructive" : ""}
+              />
+              {phoneError && <p className="text-xs text-destructive">{phoneError}</p>}
+            </div>
+          </div>
+          <div className="border-l-2 border-primary pl-3 space-y-1.5 text-sm">
+            <p className="font-medium text-foreground">1. ⭐ 4-week review request funnel</p>
+            <p className="text-muted-foreground italic text-xs">(*stops automatically if they leave a review*)</p>
+            <p className="font-medium text-foreground pt-1">2. 🗓️ 1-year follow-up sequence</p>
+            <p className="text-muted-foreground text-xs">Texted every 2–3 months for return discounts + referrals</p>
+          </div>
+          <div className="flex gap-2 pt-1">
+            <Button variant="ghost" className="flex-1" onClick={() => onOpenChange(false)} disabled={loading}>
+              Cancel
+            </Button>
+            <Button className="flex-1" onClick={handleConfirm} disabled={loading}>
+              {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+              {loading ? "Adding…" : "Add to Job Complete"}
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
 }
 
 // --- Send SMS Dialog (copy-to-clipboard for now) ---

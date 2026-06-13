@@ -1,16 +1,16 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/hooks/useAuth";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { ConversationProvider } from "@/context/ConversationContext";
 import AppLayout from "@/components/layout/AppLayout";
-import Index from "./pages/Index";
 import SettingsPage from "./pages/SettingsPage";
 import ContactsPage from "./pages/ContactsPage";
 import MessageQueuePage from "./pages/MessageQueuePage";
 import ContactProfilePage from "./pages/ContactProfilePage";
+import AddJobPage from "./pages/AddJobPage";
 import LoginPage from "./pages/LoginPage";
 import JobCompletePage from "./pages/JobCompletePage";
 import NotFound from "./pages/NotFound";
@@ -33,10 +33,11 @@ const App = () => (
                   <ConversationProvider>
                   <AppLayout>
                     <Routes>
-                      <Route path="/" element={<Index />} />
+                      <Route path="/" element={<Navigate to="/messages" replace />} />
                       <Route path="/settings" element={<SettingsPage />} />
                       <Route path="/contacts" element={<ContactsPage />} />
                       <Route path="/messages" element={<MessageQueuePage />} />
+                      <Route path="/add-job" element={<AddJobPage />} />
                       <Route path="/contacts/:id" element={<ContactProfilePage />} />
                       <Route path="*" element={<NotFound />} />
                     </Routes>

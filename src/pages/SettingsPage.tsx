@@ -18,7 +18,6 @@ const SETTINGS_FIELDS: { key: keyof BusinessSettings; label: string; isUrl: bool
   { key: "company_name", label: "Company Name", isUrl: false },
   { key: "gmb_review_link", label: "GMB Review Link", isUrl: true },
   { key: "quote_form_link", label: "Quote Form Link", isUrl: true },
-  { key: "marketing_form_link", label: "Marketing Form Link", isUrl: true },
 ];
 
 function SectionHeader({ children }: { children: React.ReactNode }) {

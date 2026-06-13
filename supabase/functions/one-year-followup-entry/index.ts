@@ -61,7 +61,7 @@ Deno.serve(async (req) => {
         full_name: contact_first_name,
         phone: contact_phone,
         business_id,
-        lead_source: "Job Complete Form",
+        lead_source: "Job Complete",
       });
       contact_id = contact.id;
       console.log("[one-year-followup-entry] resolved contact_id:", contact_id);

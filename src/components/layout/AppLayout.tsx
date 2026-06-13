@@ -1,6 +1,6 @@
 import { ReactNode, useEffect, useState } from "react";
 import { NavLink } from "react-router-dom";
-import { LayoutDashboard, Users, Settings, MessageSquare, WifiOff } from "lucide-react";
+import { Users, Settings, MessageSquare, WifiOff, CheckCircle2 } from "lucide-react";
 import { useConversationOpen } from "@/context/ConversationContext";
 
 function OfflineBanner() {
@@ -27,8 +27,8 @@ function OfflineBanner() {
 }
 
 const navItems = [
-  { to: "/", icon: LayoutDashboard, label: "Dashboard", end: true },
   { to: "/messages", icon: MessageSquare, label: "Inbox", end: false },
+  { to: "/add-job", icon: CheckCircle2, label: "Job Complete", end: false },
   { to: "/contacts", icon: Users, label: "Contacts", end: false },
   { to: "/settings", icon: Settings, label: "Settings", end: false },
 ];
@@ -99,7 +99,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             {({ isActive }) => (
               <>
                 <item.icon className="w-4 h-4 shrink-0" strokeWidth={1.75} />
-                <span className={isActive ? "inline" : "hidden"}>{item.label}</span>
+                <span className={`whitespace-nowrap ${isActive ? "inline" : "hidden"}`}>{item.label}</span>
               </>
             )}
           </NavLink>
