@@ -37,7 +37,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const { isConversationOpen } = useConversationOpen();
 
   return (
-    <div className="flex flex-col overflow-hidden bg-background" style={{ height: "var(--app-height, 100dvh)" }}>
+    <div className="flex flex-col h-dvh overflow-hidden bg-background">
       <OfflineBanner />
       <div className="flex flex-1 min-h-0">
         {/* Desktop left rail — slim, icon-only */}
