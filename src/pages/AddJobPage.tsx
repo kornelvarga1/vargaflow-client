@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { CheckCircle2, Loader2, Search, X } from "lucide-react";
+import { CheckCircle2, ChevronDown, Loader2, Search, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -52,6 +52,7 @@ export default function AddJobPage() {
   const [formState, setFormState] = useState<FormState>("idle");
   const [submittedName, setSubmittedName] = useState("");
 
+  const [explainerOpen, setExplainerOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [showResults, setShowResults] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
@@ -132,14 +133,29 @@ export default function AddJobPage() {
         <h1 className="font-serif text-3xl text-foreground">Job Complete</h1>
       </header>
 
-      <div className="bg-card border border-border/60 rounded-2xl p-5 mb-4">
-        <div className="border-l-2 border-primary pl-4 space-y-2 text-sm">
-          <p className="font-medium text-foreground">1. ⭐ This will send out your 5 star review request funnel (gate keeping negative reviews)</p>
-          <p className="text-muted-foreground">— Customer will be reminded to leave you a 5★ review 4 times over a 4 week period</p>
-          <p className="text-muted-foreground italic">(*automation will stop if they leave a review*)</p>
-          <p className="font-medium text-foreground pt-1">2. 🗓️ Customer will be put into your 1 year follow up sequence</p>
-          <p className="text-muted-foreground">— Customer will be texted every 2–3 months reminding them of your return customer discount + requesting referrals for the same discount</p>
-        </div>
+      <div className="bg-card border border-border/60 rounded-2xl overflow-hidden mb-4">
+        <button
+          type="button"
+          onClick={() => setExplainerOpen((o) => !o)}
+          className="w-full flex items-center justify-between px-5 py-3.5 text-left hover:bg-secondary/20 transition-colors"
+        >
+          <span className="text-sm text-muted-foreground">What does this do?</span>
+          <ChevronDown
+            className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${explainerOpen ? "rotate-180" : ""}`}
+            strokeWidth={1.5}
+          />
+        </button>
+        {explainerOpen && (
+          <div className="border-t border-border/40 px-5 py-4">
+            <div className="border-l-2 border-primary pl-4 space-y-2 text-sm">
+              <p className="font-medium text-foreground">1. ⭐ This will send out your 5 star review request funnel (gate keeping negative reviews)</p>
+              <p className="text-muted-foreground">— Customer will be reminded to leave you a 5★ review 4 times over a 4 week period</p>
+              <p className="text-muted-foreground italic">(*automation will stop if they leave a review*)</p>
+              <p className="font-medium text-foreground pt-1">2. 🗓️ Customer will be put into your 1 year follow up sequence</p>
+              <p className="text-muted-foreground">— Customer will be texted every 2–3 months reminding them of your return customer discount + requesting referrals for the same discount</p>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="bg-card border border-border/60 rounded-2xl p-5">
