@@ -383,11 +383,14 @@ export default function MessageQueuePage() {
       </div>
 
       {/* Right Panel: Conversation */}
-      <div className={
-        selectedContactId
-          ? "fixed inset-x-0 top-0 h-dvh flex flex-col overflow-hidden bg-background z-20 md:static md:flex-1 md:h-auto md:inset-auto md:z-auto md:bg-background"
-          : "hidden md:flex md:flex-col md:flex-1 md:min-w-0 md:bg-background"
-      }>
+      <div
+        className={
+          selectedContactId
+            ? "fixed inset-x-0 top-0 flex flex-col overflow-hidden bg-background z-20 md:static md:flex-1 md:h-auto md:inset-auto md:z-auto md:bg-background"
+            : "hidden md:flex md:flex-col md:flex-1 md:min-w-0 md:bg-background"
+        }
+        style={selectedContactId ? { height: "var(--app-height, 100dvh)" } : undefined}
+      >
         {!selectedContactId ? (
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center">
