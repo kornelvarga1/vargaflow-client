@@ -34,6 +34,10 @@ export function useCallDevice(businessId: string | undefined) {
         console.error("[callDevice] error:", err);
         setInitError(`Device: ${err.message ?? String(err)}`);
       });
+      device.on("tokenWillExpire", async () => {
+        const { data } = await invokeFunction<{ token: string }>("twilio-token", { business_id: businessId });
+        if (data?.token) device.updateToken(data.token);
+      });
 
       device.on("incoming", (call: Call) => {
         setIncomingCall(call);
