@@ -187,6 +187,23 @@ function useContactActiveSequence(contactId: string | null) {
   });
 }
 
+function useFallbackContact(contactId: string | null, businessId: string | undefined, skip: boolean) {
+  return useQuery({
+    queryKey: ["contact_fallback", contactId, businessId],
+    enabled: !!contactId && !!businessId && !skip,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("contacts")
+        .select("id, full_name, phone, pipeline, stage")
+        .eq("id", contactId!)
+        .eq("business_id", businessId!)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
 type FilterType = "all" | "unread";
 
 // --- Main Component ---
@@ -264,6 +281,19 @@ export default function MessageQueuePage() {
   }, [messages, optimisticMessages]);
 
   const selectedContact = contacts.find((c) => c.id === selectedContactId);
+  const { data: fallbackContactRaw } = useFallbackContact(selectedContactId, businessId, !!selectedContact);
+  const effectiveContact: ConversationContact | undefined = selectedContact ?? (fallbackContactRaw ? {
+    id: fallbackContactRaw.id,
+    full_name: fallbackContactRaw.full_name,
+    phone: fallbackContactRaw.phone,
+    pipeline: fallbackContactRaw.pipeline,
+    stage: fallbackContactRaw.stage,
+    lastMessage: "",
+    lastMessageDirection: "outbound" as const,
+    lastMessageAt: new Date().toISOString(),
+    hasUnread: false,
+    messageCount: 0,
+  } : undefined);
 
   const filteredContacts = contacts.filter((c) => {
     if (search && !c.full_name.toLowerCase().includes(search.toLowerCase())) return false;
@@ -399,8 +429,8 @@ export default function MessageQueuePage() {
         ) : (
           <>
             {/* Conversation Header */}
-            {selectedContact && (() => {
-              const headerName = selectedContact.full_name.trim();
+            {effectiveContact && (() => {
+              const headerName = effectiveContact.full_name.trim();
               const headerIsPhone = !headerName || /^[+\d]/.test(headerName);
               return (
                 <div className="sticky top-0 z-10 px-3 py-2.5 border-b border-border/30 bg-background/90 backdrop-blur-sm space-y-1.5 shrink-0">
@@ -414,7 +444,7 @@ export default function MessageQueuePage() {
                       <ArrowLeft className="w-5 h-5" strokeWidth={1.5} />
                     </Button>
                     <Link
-                      to={`/contacts/${selectedContact.id}`}
+                      to={`/contacts/${effectiveContact.id}`}
                       className="flex items-center gap-2 flex-1 min-w-0 px-1 py-1 rounded-lg hover:bg-secondary/40 transition-colors"
                     >
                       <div className={`w-9 h-9 rounded-full ${headerIsPhone ? "bg-secondary" : getAvatarTone(headerName)} flex items-center justify-center shrink-0`}>
@@ -426,9 +456,9 @@ export default function MessageQueuePage() {
                           </span>
                         )}
                       </div>
-                      <p className="font-semibold text-[15px] flex-1 truncate text-foreground">{selectedContact.full_name}</p>
+                      <p className="font-semibold text-[15px] flex-1 truncate text-foreground">{effectiveContact.full_name}</p>
                     </Link>
-                    {selectedContact.phone && (
+                    {effectiveContact.phone && (
                       callState === "active" || callState === "connecting" ? (
                         <Button variant="ghost" size="icon" className="h-9 w-9 text-destructive shrink-0" onClick={hangup}>
                           <PhoneOff className="w-4 h-4" strokeWidth={1.5} />
@@ -440,7 +470,7 @@ export default function MessageQueuePage() {
                           title={callInitError ?? undefined}
                           className={`h-9 w-9 shrink-0 ${callReady ? "" : "opacity-40"}`}
                           disabled={!callReady || callState !== "idle"}
-                          onClick={() => startCall(selectedContact.phone!, selectedContact.id)}
+                          onClick={() => startCall(effectiveContact.phone!, effectiveContact.id)}
                         >
                           <Phone className="w-4 h-4" strokeWidth={1.5} />
                         </Button>
@@ -525,8 +555,8 @@ export default function MessageQueuePage() {
             <div className="flex-none">
               <ComposeBar
                 contactId={selectedContactId}
-                contactName={selectedContact?.full_name || ""}
-                contactPhone={selectedContact?.phone || null}
+                contactName={effectiveContact?.full_name || ""}
+                contactPhone={effectiveContact?.phone || null}
                 businessId={businessId}
                 onSent={() => {
                   qc.invalidateQueries({ queryKey: ["conversation", selectedContactId] });
