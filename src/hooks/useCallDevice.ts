@@ -26,7 +26,11 @@ export function useCallDevice(businessId: string | undefined) {
         return;
       }
 
-      device = new Device(data.token, { logLevel: "error" });
+      device = new Device(data.token, {
+        logLevel: "error",
+        edge: ["dublin", "frankfurt", "us1"],
+        codecPreferences: [Call.Codec.Opus, Call.Codec.PCMU],
+      });
 
       device.on("registered", () => { setReady(true); setInitError(null); });
       device.on("unregistered", () => setReady(false));
