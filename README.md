@@ -1,73 +1,53 @@
-# Welcome to your Lovable project
+# VargaFlow Client
 
-## Project info
+The contractor-facing app. Where a VargaFlow client (a roofing, plumbing, HVAC or electrical business) manages their own customers: contacts, two-way messaging, browser calling, and the post-job automations that turn finished work into reviews and repeat business.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+Separate from the admin CRM by design. The admin app's automations fire at *prospects of VargaFlow*; this app's automations fire at *the contractor's own customers*, which means different copy, different voice, a different table of sequence templates, and its own set of edge functions.
 
-## How can I edit this code?
+## What it does
 
-There are several ways of editing your application.
+- **Contacts and jobs** — the contractor's customer list, with job history
+- **Two-way messaging** — SMS conversations, inbound and outbound
+- **Browser calling** — call customers from the app, scoped per business, with call logging
+- **Post-job automations**:
+  - review funnel, triggered when a job is marked complete
+  - one-year referral follow-up
+  - database reactivation for dormant customers
+  - missed-call text-back, so a missed call turns into a conversation instead of a lost job
 
-**Use Lovable**
+## Architecture
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+```
+job marked complete  ──►  edge function  ──►  message_queue  ──►  Twilio / Resend
+missed inbound call  ──►  inbound-call   ──►  text-back
 ```
 
-**Edit a file directly in GitHub**
+Multi-tenant: every query, every queued message and every voice token is scoped by `business_id`, enforced with row-level security rather than application-layer filtering.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+**Frontend** — React 18, TypeScript, Vite, Tailwind, shadcn/ui, Vitest.
 
-**Use GitHub Codespaces**
+**Backend** — Supabase Postgres plus this app's own Deno edge functions under `supabase/functions/`. Contractor-side sequence copy lives in its own `client_sequence_templates` table, kept separate from the VargaFlow-side sequences so the two voices never bleed into each other.
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Problems worth reading the code for
 
-## What technologies are used for this project?
+- **Per-tenant voice** — issuing Twilio access tokens scoped to a `business_id` so one contractor can never dial from another's number, with EU edge configuration for latency.
+- **Missed-call text-back** — the race between a call ending, the webhook arriving and the customer calling back is narrower than it looks.
+- **Multi-tenant RLS** — getting policies right so a contractor sees exactly their own data, with no service-role escape hatch in the client path.
 
-This project is built with:
+## Running it
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+```bash
+npm install
+cp .env.example .env
+npm run dev             # port 8080
+npm run test
+npm run build
+```
 
-## How can I deploy this project?
+Edge functions in this repo deploy from this repo:
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+```bash
+supabase functions deploy <name> --project-ref <ref>
+```
 
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+Both apps share one Supabase project, so check which app owns a function before adding or deploying one.

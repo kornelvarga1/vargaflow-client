@@ -28,3 +28,7 @@ supabase/.temp/
 *.njsproj
 *.sln
 *.sw?
+
+# Local env and tooling
+.env
+.claude/settings.local.json
