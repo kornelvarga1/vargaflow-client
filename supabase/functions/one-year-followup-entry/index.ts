@@ -22,6 +22,7 @@ import {
   jsonResponse,
   scheduleFunctionCall,
   upsertContact,
+  requireServiceOrBusinessUser,
 } from "../_shared/helpers.ts";
 
 const REFERRAL_DELAY = 23 * 24 * 3600; // 23 days in seconds
@@ -49,6 +50,11 @@ Deno.serve(async (req) => {
     if (!contact_first_name) throw new Error("Missing required field: contact_first_name");
 
     const supabase = getSupabaseAdmin();
+
+    // Cron processor or a logged-in user of this business only. Without this, anyone
+    // holding a business_id could make the contractor's number text any phone.
+    const denied = await requireServiceOrBusinessUser(req, supabase, business_id);
+    if (denied) return denied;
 
     // ── Resolve contact ──────────────────────────────────────────
     // If no contact_id supplied (e.g. called from job-complete-form),

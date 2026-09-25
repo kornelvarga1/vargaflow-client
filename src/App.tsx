@@ -12,7 +12,6 @@ import MessageQueuePage from "./pages/MessageQueuePage";
 import ContactProfilePage from "./pages/ContactProfilePage";
 import AddJobPage from "./pages/AddJobPage";
 import LoginPage from "./pages/LoginPage";
-import JobCompletePage from "./pages/JobCompletePage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -25,7 +24,8 @@ const App = () => (
         <AuthProvider>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
-            <Route path="/job-complete" element={<JobCompletePage />} />
+            {/* Old public job form. Starting sequences now needs a login, so send it to Add Job. */}
+            <Route path="/job-complete" element={<Navigate to="/add-job" replace />} />
             <Route
               path="/*"
               element={

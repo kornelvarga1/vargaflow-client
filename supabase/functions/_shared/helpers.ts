@@ -344,3 +344,53 @@ export function jsonResponse(body: unknown, status = 200): Response {
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 }
+
+// ── Caller auth ────────────────────────────────────────────────────────────
+// These functions are deployed with verify_jwt = false, so the gateway lets
+// every request through and the function has to decide who may call it.
+// Two legitimate callers exist:
+//   - the message_queue cron processor, which sends the service role key
+//   - the logged-in app (invokeFunction), which sends the user's session in X-User-Auth
+
+function bearer(value: string | null): string {
+  return value?.replace(/^Bearer\s+/i, "").trim() ?? "";
+}
+
+/** True only when the request carries this project's service role key. */
+export function isServiceCall(req: Request): boolean {
+  const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  return !!key && bearer(req.headers.get("Authorization")) === key;
+}
+
+/** Returns a 401 response for anything other than the cron processor, or null when allowed. */
+export function requireServiceCall(req: Request): Response | null {
+  return isServiceCall(req) ? null : jsonResponse({ error: "Unauthorized" }, 401);
+}
+
+/**
+ * Allows the cron processor, or a logged-in user whose profile belongs to businessId.
+ * Returns a 401/403 response to send back, or null when allowed.
+ */
+export async function requireServiceOrBusinessUser(
+  req: Request,
+  supabase: SupabaseClient,
+  businessId: string,
+): Promise<Response | null> {
+  if (isServiceCall(req)) return null;
+
+  const token = bearer(req.headers.get("X-User-Auth"));
+  if (!token) return jsonResponse({ error: "Unauthorized" }, 401);
+
+  const { data: { user }, error } = await supabase.auth.getUser(token);
+  if (error || !user) return jsonResponse({ error: "Unauthorized" }, 401);
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("business_id")
+    .eq("id", user.id)
+    .single();
+  if (!profile || profile.business_id !== businessId) {
+    return jsonResponse({ error: "Forbidden" }, 403);
+  }
+  return null;
+}

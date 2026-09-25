@@ -24,6 +24,7 @@ import {
   scheduleContactSMS,
   scheduleFunctionCall,
   scheduleOwnerSMS,
+  requireServiceCall,
 } from "../_shared/helpers.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -55,6 +56,11 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
+
+  // Only the message_queue cron processor may call this; it would otherwise let
+  // anyone with a contact_id send SMS from the contractor's number.
+  const denied = requireServiceCall(req);
+  if (denied) return denied;
 
   try {
     const body = await req.json() as Payload;
