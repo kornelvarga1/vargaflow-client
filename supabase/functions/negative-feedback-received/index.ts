@@ -109,7 +109,7 @@ Deno.serve(async (req) => {
         business_id,
         delaySeconds: 0,
         content:
-          `Hey ${settings.my_name}, heads up — ${contact_first_name}${contactTag} just tried to leave a ${star_rating}-star review. Blocked from your public page. Their feedback: ${truncated}`,
+          `Hey ${settings.my_name}, heads up — ${contact_first_name}${contactTag} rated you ${star_rating} stars and sent this feedback privately (they were also offered your Google review link): ${truncated}`,
       });
     }
 

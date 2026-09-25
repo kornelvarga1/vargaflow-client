@@ -148,8 +148,8 @@ export default function AddJobPage() {
         {explainerOpen && (
           <div className="border-t border-border/40 px-5 py-4">
             <div className="border-l-2 border-primary pl-4 space-y-2 text-sm">
-              <p className="font-medium text-foreground">1. ⭐ This will send out your 5 star review request funnel (gate keeping negative reviews)</p>
-              <p className="text-muted-foreground">— Customer will be reminded to leave you a 5★ review 4 times over a 4 week period</p>
+              <p className="font-medium text-foreground">1. ⭐ This will send out your review request funnel (unhappy customers can message you privately, and everyone gets your Google review link)</p>
+              <p className="text-muted-foreground">— Customer will be reminded to leave you a review 4 times over a 4 week period</p>
               <p className="text-muted-foreground italic">(*automation will stop if they leave a review*)</p>
               <p className="font-medium text-foreground pt-1">2. 🗓️ Customer will be put into your 1 year follow up sequence</p>
               <p className="text-muted-foreground">— Customer will be texted every 2–3 months reminding them of your return customer discount + requesting referrals for the same discount</p>
